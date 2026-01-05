@@ -1,30 +1,45 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import API from '../../services/api';
-import { useAuth } from '../../context/AuthContext';
-import FaceCapture from '../../components/FaceCapture/FaceCapture';
-import { toast } from 'react-toastify';
-import { 
-  FaUserTie, FaMapMarkerAlt, FaBriefcase, FaEnvelope, 
-  FaCalendarCheck, FaCoffee, FaLaptopHouse, FaSignOutAlt,
-  FaPlay, FaHistory, FaTimes, FaPlaneDeparture, FaCalendarAlt
-} from 'react-icons/fa';
-
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import API from "../../services/api";
+import { useAuth } from "../../context/AuthContext";
+import FaceCapture from "../../components/FaceCapture/FaceCapture";
+import { toast } from "react-toastify";
+import {
+  FaUserTie,
+  FaMapMarkerAlt,
+  FaBriefcase,
+  FaEnvelope,
+  FaCalendarCheck,
+  FaCoffee,
+  FaLaptopHouse,
+  FaSignOutAlt,
+  FaPlay,
+  FaHistory,
+  FaTimes,
+  FaPlaneDeparture,
+  FaCalendarAlt,
+} from
 // Helper for Image URL
 const getImageUrl = (path) => {
-  if (!path) return 'https://via.placeholder.com/150';
-  if (path.startsWith('http')) return path;
-  return `http://localhost:5000/${path.replace(/\\/g, '/')}`; 
+  if (!path) return "https://via.placeholder.com/150";
+  if (path.startsWith("http")) return path;
+  return `${window.location.origin}/${path.replace(/\\/g, "/")}`;
 };
 
 const EmployeeDashboard = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
-  
+
   // State
   const [loading, setLoading] = useState(true);
   const [history, setHistory] = useState([]);
-  const [stats, setStats] = useState({ present: 0, leaves: 0, wfh: 0, halfDays: 0, holidays: 0 });
+  const [stats, setStats] = useState({
+    present: 0,
+    leaves: 0,
+    wfh: 0,
+    halfDays: 0,
+    holidays: 0,
+  });
   const [todayStatus, setTodayStatus] = useState("Not Started");
 
   // Modals & Actions
@@ -32,7 +47,7 @@ const EmployeeDashboard = () => {
   const [showReportModal, setShowReportModal] = useState(false);
   const [dailyReport, setDailyReport] = useState("");
   const [actionType, setActionType] = useState(null);
-  
+
   useEffect(() => {
     if (user) fetchDashboardData();
   }, [user]);
@@ -40,24 +55,25 @@ const EmployeeDashboard = () => {
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
-      const statsRes = await API.get('/attendance/stats');
+      const statsRes = await API.get("/attendance/stats");
       setStats(statsRes.data);
 
-      const attRes = await API.get('/attendance/history'); 
+      const attRes = await API.get("/attendance/history");
       const attData = Array.isArray(attRes.data) ? attRes.data : [];
       setHistory(attData);
 
-      const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
-      const todayRecord = attData.find(d => d.date === today);
-      
+      const today = new Date().toLocaleDateString("en-CA", {
+        timeZone: "Asia/Kolkata",
+      });
+      const todayRecord = attData.find((d) => d.date === today);
+
       if (todayRecord) {
         if (todayRecord.punchOutTime) setTodayStatus("Completed");
-        else if (todayRecord.status === 'On Break') setTodayStatus("On Break");
+        else if (todayRecord.status === "On Break") setTodayStatus("On Break");
         else setTodayStatus("Working");
       } else {
         setTodayStatus("Not Started");
       }
-
     } catch (err) {
       console.error(err);
     } finally {
@@ -67,49 +83,55 @@ const EmployeeDashboard = () => {
 
   /* ================= ACTIONS ================= */
   const handlePunchClick = (type) => {
-    if (type === 'out') {
-        setShowReportModal(true);
+    if (type === "out") {
+      setShowReportModal(true);
     } else {
-        setActionType('in');
-        setShowCamera(true);
+      setActionType("in");
+      setShowCamera(true);
     }
   };
 
   const handleReportSubmit = () => {
-      if(!dailyReport.trim() || dailyReport.length < 5) {
-          return toast.warning("Please write at least 5 characters in report.");
-      }
-      setShowReportModal(false);
-      setActionType('out');
-      setShowCamera(true);
+    if (!dailyReport.trim() || dailyReport.length < 5) {
+      return toast.warning("Please write at least 5 characters in report.");
+    }
+    setShowReportModal(false);
+    setActionType("out");
+    setShowCamera(true);
   };
 
   /* ================= LOCATION CAPTURE & PUNCH ================= */
   const onFaceVerified = async (faceData) => {
     toast.info("📍 Acquiring GPS Location...", { autoClose: 2000 });
-    
+
     navigator.geolocation.getCurrentPosition(
       async (position) => {
         try {
           const payload = {
             faceDescriptor: JSON.stringify(faceData.descriptor),
             image: faceData.image,
-            location: JSON.stringify({ 
-                lat: position.coords.latitude, 
-                lng: position.coords.longitude 
+            location: JSON.stringify({
+              lat: position.coords.latitude,
+              lng: position.coords.longitude,
             }),
-            dailyReport: actionType === 'out' ? dailyReport : undefined
+            dailyReport: actionType === "out" ? dailyReport : undefined,
           };
 
-          const endpoint = actionType === 'in' ? '/attendance/punch-in' : '/attendance/punch-out';
+          const endpoint =
+            actionType === "in"
+              ? "/attendance/punch-in"
+              : "/attendance/punch-out";
           await API.post(endpoint, payload);
-          
-          toast.success(actionType === 'in' ? "Punch In Successful ☀️" : "Punch Out Successful 🏠");
-          
-          setShowCamera(false);
-          setDailyReport(""); 
-          fetchDashboardData(); 
 
+          toast.success(
+            actionType === "in"
+              ? "Punch In Successful ☀️"
+              : "Punch Out Successful 🏠"
+          );
+
+          setShowCamera(false);
+          setDailyReport("");
+          fetchDashboardData();
         } catch (err) {
           // 403 Errors will show here
           toast.error(err.response?.data?.message || "Verification Failed");
@@ -119,96 +141,142 @@ const EmployeeDashboard = () => {
         console.error("GPS Error:", error);
         toast.error("Location Access Denied or GPS Error. Enable GPS.");
       },
-      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 } 
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
     );
   };
 
-  if (loading || !user) return <div className="loader-screen"><div className="spinner"></div></div>;
+  if (loading || !user)
+    return (
+      <div className="loader-screen">
+        <div className="spinner"></div>
+      </div>
+    );
 
   return (
     <div className="emp-dashboard">
-      
       {/* HEADER */}
       <header className="dash-header">
         <div className="welcome-text">
-          <h1>Hello, {user.name.split(' ')[0]} 👋</h1>
+          <h1>Hello, {user.name.split(" ")[0]} 👋</h1>
           <p>Let's make today productive!</p>
         </div>
         <div className="header-actions">
-            <span className="date-display"><FaCalendarAlt/> {new Date().toDateString()}</span>
-            <button className="logout-btn" onClick={logout}>
-                <FaSignOutAlt/> <span>Logout</span>
-            </button>
+          <span className="date-display">
+            <FaCalendarAlt /> {new Date().toDateString()}
+          </span>
+          <button className="logout-btn" onClick={logout}>
+            <FaSignOutAlt /> <span>Logout</span>
+          </button>
         </div>
       </header>
 
       <div className="grid-layout">
-        
         {/* LEFT: PROFILE & ACTIONS */}
         <aside className="profile-card slide-up">
           <div className="profile-header">
-            <img src={getImageUrl(user.profileImage)} alt="Profile" onError={(e) => e.target.src = 'https://via.placeholder.com/150'} />
-            <span className={`status-badge ${todayStatus.toLowerCase().replace(' ', '-')}`}>{todayStatus}</span>
+            <img
+              src={getImageUrl(user.profileImage)}
+              alt="Profile"
+              onError={(e) =>
+                (e.target.src = "https://via.placeholder.com/150")
+              }
+            />
+            <span
+              className={`status-badge ${todayStatus
+                .toLowerCase()
+                .replace(" ", "-")}`}
+            >
+              {todayStatus}
+            </span>
           </div>
           <h3>{user.name}</h3>
           <p className="designation">{user.designation}</p>
-          
+
           <div className="info-list">
-            <div className="info-item"><FaBriefcase/> <span>{user.companyId || 'Company Staff'}</span></div>
-            <div className="info-item"><FaMapMarkerAlt/> <span>{user.isWfhActive ? 'Remote / WFH' : 'Office Location'}</span></div>
+            <div className="info-item">
+              <FaBriefcase /> <span>{user.companyId || "Company Staff"}</span>
+            </div>
+            <div className="info-item">
+              <FaMapMarkerAlt />{" "}
+              <span>
+                {user.isWfhActive ? "Remote / WFH" : "Office Location"}
+              </span>
+            </div>
           </div>
 
           <div className="action-stack">
-            {todayStatus === 'Not Started' && (
-              <button className="btn-action in pulse-btn" onClick={() => handlePunchClick('in')}>
-                <FaPlay/> Punch In
+            {todayStatus === "Not Started" && (
+              <button
+                className="btn-action in pulse-btn"
+                onClick={() => handlePunchClick("in")}
+              >
+                <FaPlay /> Punch In
               </button>
             )}
-            {(todayStatus === 'Working' || todayStatus === 'On Break') && (
+            {(todayStatus === "Working" || todayStatus === "On Break") && (
               <>
-                <button className="btn-action break" onClick={() => navigate('/employee/attendance')}>
-                  <FaCoffee/> Manage Break
+                <button
+                  className="btn-action break"
+                  onClick={() => navigate("/employee/attendance")}
+                >
+                  <FaCoffee /> Manage Break
                 </button>
-                <button className="btn-action out" onClick={() => handlePunchClick('out')}>
-                  <FaSignOutAlt/> Punch Out
+                <button
+                  className="btn-action out"
+                  onClick={() => handlePunchClick("out")}
+                >
+                  <FaSignOutAlt /> Punch Out
                 </button>
               </>
             )}
             <div className="secondary-actions">
-                <button className="btn-small" onClick={() => navigate('/employee/leaves')}>
-                <FaLaptopHouse/> WFH / Leave
-                </button>
-                <button className="btn-small" onClick={() => navigate('/employee/attendance')}>
-                <FaHistory/> Logs
-                </button>
+              <button
+                className="btn-small"
+                onClick={() => navigate("/employee/leaves")}
+              >
+                <FaLaptopHouse /> WFH / Leave
+              </button>
+              <button
+                className="btn-small"
+                onClick={() => navigate("/employee/attendance")}
+              >
+                <FaHistory /> Logs
+              </button>
             </div>
           </div>
         </aside>
 
         {/* RIGHT: STATS & HISTORY */}
         <main className="main-content slide-up delay-1">
-          
           {/* STATS ROW */}
           <div className="stats-row">
             <div className="stat-box">
               <h3 className="text-green">{stats.present}</h3>
               <span>Present</span>
-              <div className="icon-bg green"><FaCalendarCheck/></div>
+              <div className="icon-bg green">
+                <FaCalendarCheck />
+              </div>
             </div>
             <div className="stat-box">
               <h3 className="text-blue">{stats.leaves}</h3>
               <span>Leaves</span>
-              <div className="icon-bg blue"><FaPlaneDeparture/></div>
+              <div className="icon-bg blue">
+                <FaPlaneDeparture />
+              </div>
             </div>
             <div className="stat-box">
               <h3 className="text-purple">{stats.wfh}</h3>
               <span>WFH</span>
-              <div className="icon-bg purple"><FaLaptopHouse/></div>
+              <div className="icon-bg purple">
+                <FaLaptopHouse />
+              </div>
             </div>
             <div className="stat-box">
               <h3 className="text-orange">{stats.halfDays}</h3>
               <span>Half Days</span>
-              <div className="icon-bg orange"><FaHistory/></div>
+              <div className="icon-bg orange">
+                <FaHistory />
+              </div>
             </div>
           </div>
 
@@ -216,7 +284,12 @@ const EmployeeDashboard = () => {
           <div className="history-panel">
             <div className="panel-head">
               <h3>Recent Activity</h3>
-              <button className="view-all" onClick={() => navigate('/employee/attendance')}>View Full History</button>
+              <button
+                className="view-all"
+                onClick={() => navigate("/employee/attendance")}
+              >
+                View Full History
+              </button>
             </div>
             <div className="table-responsive">
               <table className="modern-table">
@@ -230,49 +303,95 @@ const EmployeeDashboard = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {history.length === 0 ? <tr><td colSpan="5" className="text-center">No records found</td></tr> : 
-                    history.slice(0, 5).map(h => (
+                  {history.length === 0 ? (
+                    <tr>
+                      <td colSpan="5" className="text-center">
+                        No records found
+                      </td>
+                    </tr>
+                  ) : (
+                    history.slice(0, 5).map((h) => (
                       <tr key={h._id}>
                         <td>{new Date(h.date).toLocaleDateString()}</td>
-                        <td className="in-time">{h.punchInTime ? new Date(h.punchInTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '--'}</td>
-                        <td className="out-time">{h.punchOutTime ? new Date(h.punchOutTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '--'}</td>
+                        <td className="in-time">
+                          {h.punchInTime
+                            ? new Date(h.punchInTime).toLocaleTimeString([], {
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })
+                            : "--"}
+                        </td>
+                        <td className="out-time">
+                          {h.punchOutTime
+                            ? new Date(h.punchOutTime).toLocaleTimeString([], {
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })
+                            : "--"}
+                        </td>
                         <td>{h.mode}</td>
-                        <td><span className={`status-pill ${h.status.toLowerCase()}`}>{h.status}</span></td>
+                        <td>
+                          <span
+                            className={`status-pill ${h.status.toLowerCase()}`}
+                          >
+                            {h.status}
+                          </span>
+                        </td>
                       </tr>
                     ))
-                  }
+                  )}
                 </tbody>
               </table>
             </div>
           </div>
-
         </main>
       </div>
 
       {/* --- MODALS --- */}
       {showReportModal && (
-          <div className="modal-overlay">
-              <div className="modal-card">
-                  <div className="modal-head"><h3>Daily Work Report 📝</h3><button onClick={() => setShowReportModal(false)}><FaTimes/></button></div>
-                  <div className="form-body">
-                      <p className="info-text">Please summarize your work today before punching out.</p>
-                      <textarea 
-                        rows="4" 
-                        placeholder="e.g. Completed API integration..." 
-                        value={dailyReport} 
-                        onChange={(e) => setDailyReport(e.target.value)}
-                      ></textarea>
-                      <button className="btn-submit" onClick={handleReportSubmit}>Submit & Punch Out</button>
-                  </div>
-              </div>
+        <div className="modal-overlay">
+          <div className="modal-card">
+            <div className="modal-head">
+              <h3>Daily Work Report 📝</h3>
+              <button onClick={() => setShowReportModal(false)}>
+                <FaTimes />
+              </button>
+            </div>
+            <div className="form-body">
+              <p className="info-text">
+                Please summarize your work today before punching out.
+              </p>
+              <textarea
+                rows="4"
+                placeholder="e.g. Completed API integration..."
+                value={dailyReport}
+                onChange={(e) => setDailyReport(e.target.value)}
+              ></textarea>
+              <button className="btn-submit" onClick={handleReportSubmit}>
+                Submit & Punch Out
+              </button>
+            </div>
           </div>
+        </div>
       )}
 
       {showCamera && (
         <div className="modal-overlay">
           <div className="modal-card camera-card">
-            <div className="modal-head"><h3>{actionType === 'in' ? "Punch In" : "Punch Out"} Verification</h3><button onClick={() => setShowCamera(false)}><FaTimes/></button></div>
-            <FaceCapture onCapture={onFaceVerified} btnText={actionType === 'in' ? "Verify & Punch In" : "Verify & Punch Out"} />
+            <div className="modal-head">
+              <h3>
+                {actionType === "in" ? "Punch In" : "Punch Out"} Verification
+              </h3>
+              <button onClick={() => setShowCamera(false)}>
+                <FaTimes />
+              </button>
+            </div>
+            <FaceCapture
+              onCapture={onFaceVerified}
+              btnText={
+                actionType === "in" ? "Verify & Punch In" : "Verify & Punch Out"
+              }
+            />
           </div>
         </div>
       )}
