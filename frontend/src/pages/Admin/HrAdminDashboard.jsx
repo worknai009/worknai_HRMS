@@ -227,7 +227,7 @@ const HrAdminDashboard = () => {
                       <div className="user-cell">
                         <div className="avatar-circle">
                           {emp.profileImage ? (
-                            <img src={`http://localhost:5000/${emp.profileImage}`} alt="profile" onError={(e)=>{e.target.onerror=null; e.target.style.display='none'}}/>
+                            <img src={`${window.location.origin}/${emp.profileImage?.replace(/^\/+/, '')}`} alt="profile" onError={(e)=>{e.target.onerror=null; e.target.style.display='none'}}/>
                           ) : (
                             emp.name.charAt(0)
                           )}

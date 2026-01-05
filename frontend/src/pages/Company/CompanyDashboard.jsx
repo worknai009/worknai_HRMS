@@ -2,16 +2,23 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import API from "../../services/api";
 import { useAuth } from "../../context/AuthContext";
-import { toast } from 'react-toastify';
+import { toast } from "react-toastify";
 import {
-  FaUsers, FaUserTie, FaBuilding, FaEnvelope, FaMapMarkerAlt,
-  FaArrowRight, FaCamera, FaPlusCircle, FaCircle
+  FaUsers,
+  FaUserTie,
+  FaBuilding,
+  FaEnvelope,
+  FaMapMarkerAlt,
+  FaArrowRight,
+  FaCamera,
+  FaPlusCircle,
+  FaCircle,
 } from "react-icons/fa";
 
 // Helper for Image URL
 const getImageUrl = (path) => {
   if (!path) return null;
-  return `http://localhost:5000/${path.replace(/\\/g, '/')}`;
+  return `${window.location.origin}/${path.replace(/\\/g, "/")}`;
 };
 
 const CompanyDashboard = () => {
@@ -48,11 +55,11 @@ const CompanyDashboard = () => {
 
     // Upload
     const formData = new FormData();
-    formData.append('logo', file);
+    formData.append("logo", file);
 
     try {
       await API.put("/company/update", formData, {
-        headers: { "Content-Type": "multipart/form-data" }
+        headers: { "Content-Type": "multipart/form-data" },
       });
       toast.success("Logo Updated! 📸");
     } catch {
@@ -62,7 +69,7 @@ const CompanyDashboard = () => {
 
   /* ================= REQUEST EXTRA HR ================= */
   const requestExtraHr = async () => {
-    if(!window.confirm("Request Super Admin to increase HR limit?")) return;
+    if (!window.confirm("Request Super Admin to increase HR limit?")) return;
     try {
       await API.post("/company/request-limit");
       toast.success("Request Sent to Super Admin 📩");
@@ -75,7 +82,12 @@ const CompanyDashboard = () => {
   // Helper to generate Initials Logo
   const getInitials = (name) => {
     if (!name) return "CO";
-    return name.split(" ").map(n => n[0]).join("").substring(0, 2).toUpperCase();
+    return name
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .substring(0, 2)
+      .toUpperCase();
   };
 
   if (loading) return <div className="loader">Loading Dashboard...</div>;
@@ -92,25 +104,35 @@ const CompanyDashboard = () => {
           </div>
           <span>Company Panel</span>
         </div>
-        <button className="logout-btn" onClick={logout}>Logout</button>
+        <button className="logout-btn" onClick={logout}>
+          Logout
+        </button>
       </header>
 
       <div className="content-wrapper">
-        
         {/* TOP PROFILE SECTION */}
         <section className="profile-card">
           <div className="logo-section">
             <div className="logo-wrapper">
-              {logoPreview || (company?.logo) ? (
-                <img src={logoPreview || getImageUrl(company.logo)} alt="Logo" className="comp-logo" />
+              {logoPreview || company?.logo ? (
+                <img
+                  src={logoPreview || getImageUrl(company.logo)}
+                  alt="Logo"
+                  className="comp-logo"
+                />
               ) : (
                 <div className="default-logo">{getInitials(company?.name)}</div>
               )}
-              
+
               {/* Hidden Upload Button */}
               <label className="upload-trigger">
                 <FaCamera />
-                <input type="file" hidden accept="image/*" onChange={handleLogoChange} />
+                <input
+                  type="file"
+                  hidden
+                  accept="image/*"
+                  onChange={handleLogoChange}
+                />
               </label>
             </div>
           </div>
@@ -118,23 +140,35 @@ const CompanyDashboard = () => {
           <div className="info-block">
             <h1>{company?.name}</h1>
             <div className="meta">
-              <div className="meta-item"><FaEnvelope /> {company?.email}</div>
-              <div className="meta-item"><FaMapMarkerAlt /> {company?.location?.address || "Location not set"}</div>
+              <div className="meta-item">
+                <FaEnvelope /> {company?.email}
+              </div>
+              <div className="meta-item">
+                <FaMapMarkerAlt />{" "}
+                {company?.location?.address || "Location not set"}
+              </div>
             </div>
           </div>
 
           <div className="plan-info">
             <div className="plan-header">HR Limit Usage</div>
             <div className="plan-stats">
-                <h3>{hrs.length} <span className="divider">/</span> {company?.maxHrAdmins}</h3>
+              <h3>
+                {hrs.length} <span className="divider">/</span>{" "}
+                {company?.maxHrAdmins}
+              </h3>
             </div>
-            
-            {company?.hrLimitRequest === 'Pending' ? (
-                <span className="badge pending">Request Pending...</span>
+
+            {company?.hrLimitRequest === "Pending" ? (
+              <span className="badge pending">Request Pending...</span>
             ) : (
-                <button className="req-btn" onClick={requestExtraHr} disabled={hrs.length < company?.maxHrAdmins}>
-                    Request Limit Increase
-                </button>
+              <button
+                className="req-btn"
+                onClick={requestExtraHr}
+                disabled={hrs.length < company?.maxHrAdmins}
+              >
+                Request Limit Increase
+              </button>
             )}
           </div>
         </section>
@@ -142,14 +176,18 @@ const CompanyDashboard = () => {
         {/* STATS CARDS */}
         <div className="stats-grid">
           <div className="stat-box blue-theme">
-            <div className="s-icon"><FaUsers /></div>
+            <div className="s-icon">
+              <FaUsers />
+            </div>
             <div>
               <h2>{stats.totalEmployees}</h2>
               <p>Active Employees</p>
             </div>
           </div>
           <div className="stat-box purple-theme">
-            <div className="s-icon"><FaUserTie /></div>
+            <div className="s-icon">
+              <FaUserTie />
+            </div>
             <div>
               <h2>{stats.totalHRs}</h2>
               <p>HR Managers</p>
@@ -159,16 +197,22 @@ const CompanyDashboard = () => {
 
         {/* LISTS GRID */}
         <div className="lists-container">
-          
           {/* HR LIST */}
           <div className="list-card">
             <div className="card-head">
               <h3>Active HR Team</h3>
-              <button className="view-more-btn" onClick={() => navigate("/company/hr-management")}>Manage <FaArrowRight/></button>
+              <button
+                className="view-more-btn"
+                onClick={() => navigate("/company/hr-management")}
+              >
+                Manage <FaArrowRight />
+              </button>
             </div>
             <div className="list-body">
-              {hrs.length === 0 ? <p className="empty">No HRs added yet.</p> : 
-                hrs.map(hr => (
+              {hrs.length === 0 ? (
+                <p className="empty">No HRs added yet.</p>
+              ) : (
+                hrs.map((hr) => (
                   <div key={hr._id} className="list-item">
                     <div className="avatar-s">{getInitials(hr.name)}</div>
                     <div className="details">
@@ -178,7 +222,7 @@ const CompanyDashboard = () => {
                     <span className="status-dot online" title="Active"></span>
                   </div>
                 ))
-              }
+              )}
             </div>
           </div>
 
@@ -186,17 +230,29 @@ const CompanyDashboard = () => {
           <div className="list-card">
             <div className="card-head">
               <h3>Recent Employees</h3>
-              <button className="view-more-btn" onClick={() => navigate("/company/hr-management")}>View All <FaArrowRight/></button>
+              <button
+                className="view-more-btn"
+                onClick={() => navigate("/company/hr-management")}
+              >
+                View All <FaArrowRight />
+              </button>
             </div>
             <div className="list-body">
-              {employees.length === 0 ? <p className="empty">No employees active.</p> : 
-                employees.map(emp => (
+              {employees.length === 0 ? (
+                <p className="empty">No employees active.</p>
+              ) : (
+                employees.map((emp) => (
                   <div key={emp._id} className="list-item">
-                    <img 
-                        src={getImageUrl(emp.profileImage) || "https://via.placeholder.com/40"} 
-                        onError={(e) => e.target.src = "https://via.placeholder.com/40"}
-                        className="avatar-img"
-                        alt="emp" 
+                    <img
+                      src={
+                        getImageUrl(emp.profileImage) ||
+                        "https://via.placeholder.com/40"
+                      }
+                      onError={(e) =>
+                        (e.target.src = "https://via.placeholder.com/40")
+                      }
+                      className="avatar-img"
+                      alt="emp"
                     />
                     <div className="details">
                       <strong>{emp.name}</strong>
@@ -205,10 +261,9 @@ const CompanyDashboard = () => {
                     <span className="status-dot online" title="Active"></span>
                   </div>
                 ))
-              }
+              )}
             </div>
           </div>
-
         </div>
       </div>
 

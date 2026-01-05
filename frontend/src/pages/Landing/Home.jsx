@@ -54,7 +54,7 @@ const Home = () => {
             <FaShieldAlt /> ISO 27001 Certified Security
           </div>
           <h1>
-            Enterpriseeeee Grade <span>Biometric</span> Management System
+            Enterprise Grade <span>Biometric</span> Management System
           </h1>
           <p>
             The most trusted AI-powered SaaS platform for workforce automation.

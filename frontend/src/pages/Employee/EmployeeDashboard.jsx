@@ -22,9 +22,13 @@ import {
 
 // Helper for Image URL
 const getImageUrl = (path) => {
-  if (!path) return "https://via.placeholder.com/150";
+  if (!path) return "/default-avatar.png";
   if (path.startsWith("http")) return path;
-  return `${window.location.origin}/${path.replace(/\\/g, "/")}`;
+
+  const clean = path.replace(/\\/g, "/").replace(/^\/+/, "");
+  const finalPath = clean.startsWith("uploads/") ? clean : `uploads/${clean}`;
+
+  return `${window.location.origin}/${finalPath}`;
 };
 
 const EmployeeDashboard = () => {
@@ -178,9 +182,10 @@ const EmployeeDashboard = () => {
             <img
               src={getImageUrl(user.profileImage)}
               alt="Profile"
-              onError={(e) =>
-                (e.target.src = "https://via.placeholder.com/150")
-              }
+              onError={(e) => {
+                e.currentTarget.onerror = null;
+                e.currentTarget.src = "/default-avatar.png";
+              }}
             />
             <span
               className={`status-badge ${todayStatus

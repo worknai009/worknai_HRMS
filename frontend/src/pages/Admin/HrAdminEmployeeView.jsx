@@ -1,19 +1,34 @@
-import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import API from '../../services/api';
-import { toast } from 'react-toastify';
+import React, { useEffect, useState } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import API from "../../services/api";
+import { toast } from "react-toastify";
 import {
-  FaArrowLeft, FaEnvelope, FaPhone, FaCalendarAlt,
-  FaMoneyBillWave, FaEdit, FaSave, FaTimes, FaCalculator,
-  FaCheckCircle, FaLaptopHouse, FaPlaneDeparture, FaFileAlt, 
-  FaClock, FaExclamationTriangle, FaSignInAlt, FaSignOutAlt, FaUserTie
-} from 'react-icons/fa';
+  FaArrowLeft,
+  FaEnvelope,
+  FaPhone,
+  FaCalendarAlt,
+  FaMoneyBillWave,
+  FaEdit,
+  FaSave,
+  FaTimes,
+  FaCalculator,
+  FaCheckCircle,
+  FaLaptopHouse,
+  FaPlaneDeparture,
+  FaFileAlt,
+  FaClock,
+  FaExclamationTriangle,
+  FaSignInAlt,
+  FaSignOutAlt,
+  FaUserTie,
+} from "react-icons/fa";
 
 // Helper for Image URL
-const getImageUrl = (path) => {
-  if (!path) return 'https://via.placeholder.com/150';
-  if (path.startsWith('http')) return path;
-  return `http://localhost:5000/${path.replace(/\\/g, '/')}`;
+export const getFileUrl = (p) => {
+  if (!p) return "/default-avatar.jpg"; // fallback local
+  if (p.startsWith("http")) return p; // already full url
+  const clean = p.replace(/\\/g, "/").replace(/^\/+/, ""); // remove leading slashes
+  return `${window.location.origin}/${clean}`;
 };
 
 const HrAdminEmployeeView = () => {
@@ -25,18 +40,24 @@ const HrAdminEmployeeView = () => {
   const [user, setUser] = useState(null);
   const [history, setHistory] = useState([]);
   const [leaves, setLeaves] = useState([]);
-  
+
   // Payroll State
   const [dates, setDates] = useState({
-    startDate: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0],
-    endDate: new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).toISOString().split('T')[0]
+    startDate: new Date(new Date().getFullYear(), new Date().getMonth(), 1)
+      .toISOString()
+      .split("T")[0],
+    endDate: new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0)
+      .toISOString()
+      .split("T")[0],
   });
   const [payrollStats, setPayrollStats] = useState(null);
   const [calculating, setCalculating] = useState(false);
 
   // Manual Attendance State
-  const [manualDate, setManualDate] = useState(new Date().toISOString().split('T')[0]);
-  const [manualStatus, setManualStatus] = useState('Present');
+  const [manualDate, setManualDate] = useState(
+    new Date().toISOString().split("T")[0]
+  );
+  const [manualStatus, setManualStatus] = useState("Present");
 
   // Edit Mode State
   const [isEditing, setIsEditing] = useState(false);
@@ -50,17 +71,17 @@ const HrAdminEmployeeView = () => {
   const fetchEmployeeKundali = async () => {
     try {
       setLoading(true);
-      
+
       const res = await API.get(`/hr/history/${userId}`);
       setUser(res.data.user);
       setHistory(res.data.history || []);
 
       try {
-          const leaveRes = await API.get(`/leaves/employee/${userId}`);
-          setLeaves(Array.isArray(leaveRes.data) ? leaveRes.data : []);
+        const leaveRes = await API.get(`/leaves/employee/${userId}`);
+        setLeaves(Array.isArray(leaveRes.data) ? leaveRes.data : []);
       } catch (e) {
-          console.warn("Leave fetch failed", e);
-          setLeaves([]);
+        console.warn("Leave fetch failed", e);
+        setLeaves([]);
       }
 
       setEditForm({
@@ -68,7 +89,9 @@ const HrAdminEmployeeView = () => {
         mobile: res.data.user.mobile,
         designation: res.data.user.designation,
         basicSalary: res.data.user.basicSalary,
-        joiningDate: res.data.user.joiningDate ? res.data.user.joiningDate.split('T')[0] : ''
+        joiningDate: res.data.user.joiningDate
+          ? res.data.user.joiningDate.split("T")[0]
+          : "",
       });
     } catch (err) {
       toast.error("Failed to load details");
@@ -78,7 +101,7 @@ const HrAdminEmployeeView = () => {
   };
 
   /* ================= ACTIONS ================= */
-  
+
   const handleUpdate = async () => {
     try {
       await API.put(`/hr/employee/${userId}`, editForm);
@@ -93,7 +116,9 @@ const HrAdminEmployeeView = () => {
   const calculateSalary = async () => {
     try {
       setCalculating(true);
-      const res = await API.get(`/hr/payroll/${userId}?startDate=${dates.startDate}&endDate=${dates.endDate}`);
+      const res = await API.get(
+        `/hr/payroll/${userId}?startDate=${dates.startDate}&endDate=${dates.endDate}`
+      );
       setPayrollStats(res.data);
       toast.success("Salary Calculated");
     } catch (err) {
@@ -105,14 +130,14 @@ const HrAdminEmployeeView = () => {
 
   const markManualAttendance = async () => {
     try {
-      await API.post('/hr/attendance/manual', {
+      await API.post("/hr/attendance/manual", {
         userId: user._id,
         date: manualDate,
         status: manualStatus,
-        remarks: "Marked manually by HR"
+        remarks: "Marked manually by HR",
       });
       toast.success("Attendance Updated");
-      fetchEmployeeKundali(); 
+      fetchEmployeeKundali();
     } catch (err) {
       toast.error("Failed to mark attendance");
     }
@@ -120,97 +145,145 @@ const HrAdminEmployeeView = () => {
 
   const handleLeaveAction = async (leaveId, status) => {
     try {
-      await API.put('/leaves/update-status', { leaveId, status });
+      await API.put("/leaves/update-status", { leaveId, status });
       toast.success(`Request ${status}`);
-      await fetchEmployeeKundali(); 
+      await fetchEmployeeKundali();
     } catch (err) {
       toast.error("Action failed");
     }
   };
 
-  const wfhCount = history.filter(h => h.mode === 'WFH').length;
-  const approvedLeaves = leaves.filter(l => l.status === 'Approved').length;
-  const totalPresent = history.filter(h => ['Present', 'HalfDay', 'Punched Out'].includes(h.status)).length;
-  const totalAbsent = history.filter(h => h.status === 'Absent').length;
+  const wfhCount = history.filter((h) => h.mode === "WFH").length;
+  const approvedLeaves = leaves.filter((l) => l.status === "Approved").length;
+  const totalPresent = history.filter((h) =>
+    ["Present", "HalfDay", "Punched Out"].includes(h.status)
+  ).length;
+  const totalAbsent = history.filter((h) => h.status === "Absent").length;
 
-  if (loading || !user) return (
-    <div className="loader-screen">
-      <div className="spinner"></div>
-      <p>Loading Employee Data...</p>
-    </div>
-  );
+  if (loading || !user)
+    return (
+      <div className="loader-screen">
+        <div className="spinner"></div>
+        <p>Loading Employee Data...</p>
+      </div>
+    );
 
   return (
     <div className="view-page">
-      
       {/* --- HEADER --- */}
       <header className="view-header">
         <div className="header-left">
-            <button className="back-btn" onClick={() => navigate(-1)}><FaArrowLeft/> Back</button>
-            <div className="title-box">
-                <h2>{user.name}</h2>
-                <span className="subtitle">ID: {user._id.substring(user._id.length - 6).toUpperCase()}</span>
-            </div>
+          <button className="back-btn" onClick={() => navigate(-1)}>
+            <FaArrowLeft /> Back
+          </button>
+          <div className="title-box">
+            <h2>{user.name}</h2>
+            <span className="subtitle">
+              ID: {user._id.substring(user._id.length - 6).toUpperCase()}
+            </span>
+          </div>
         </div>
         <div className="header-right">
-            <span className={`status-badge ${user.status === 'Active' ? 'active' : 'inactive'}`}>
-                {user.status}
-            </span>
+          <span
+            className={`status-badge ${
+              user.status === "Active" ? "active" : "inactive"
+            }`}
+          >
+            {user.status}
+          </span>
         </div>
       </header>
 
       <div className="grid-layout">
-        
         {/* === LEFT COLUMN: PROFILE & MANUAL ATTENDANCE === */}
         <aside className="left-panel">
-          
           {/* 1. PROFILE CARD */}
           <div className="modern-card profile-card">
             <div className="profile-img-container">
-                <img src={getImageUrl(user.profileImage)} alt="Profile" onError={(e) => e.target.src = 'https://via.placeholder.com/150'} />
+              <img
+                src={getImageUrl(user.profileImage)}
+                alt="Profile"
+                onError={(e) => {
+                  e.currentTarget.onerror = null;
+                  e.currentTarget.src = "/default-avatar.png";
+                }}
+              />
             </div>
-            
+
             {!isEditing ? (
               <div className="profile-info">
                 <span className="designation-badge">{user.designation}</span>
-                
+
                 <div className="info-list">
                   <div className="info-item">
-                    <FaEnvelope className="icon"/> 
+                    <FaEnvelope className="icon" />
                     <span>{user.email}</span>
                   </div>
                   <div className="info-item">
-                    <FaPhone className="icon"/> 
+                    <FaPhone className="icon" />
                     <span>{user.mobile}</span>
                   </div>
                   <div className="info-item">
-                    <FaCalendarAlt className="icon"/> 
-                    <span>Joined: {user.joiningDate ? new Date(user.joiningDate).toLocaleDateString() : 'N/A'}</span>
+                    <FaCalendarAlt className="icon" />
+                    <span>
+                      Joined:{" "}
+                      {user.joiningDate
+                        ? new Date(user.joiningDate).toLocaleDateString()
+                        : "N/A"}
+                    </span>
                   </div>
                   <div className="info-item salary">
-                    <FaMoneyBillWave className="icon"/> 
-                    <span>₹{user.basicSalary?.toLocaleString() || '0'} / mo</span>
+                    <FaMoneyBillWave className="icon" />
+                    <span>
+                      ₹{user.basicSalary?.toLocaleString() || "0"} / mo
+                    </span>
                   </div>
                 </div>
-                
-                <button className="btn-outline-primary full-width" onClick={() => setIsEditing(true)}>
-                    <FaEdit/> Edit Profile
+
+                <button
+                  className="btn-outline-primary full-width"
+                  onClick={() => setIsEditing(true)}
+                >
+                  <FaEdit /> Edit Profile
                 </button>
               </div>
             ) : (
               <div className="edit-form animate-fade">
                 <label>Full Name</label>
-                <input value={editForm.name} onChange={e => setEditForm({...editForm, name: e.target.value})} />
-                
+                <input
+                  value={editForm.name}
+                  onChange={(e) =>
+                    setEditForm({ ...editForm, name: e.target.value })
+                  }
+                />
+
                 <label>Mobile Number</label>
-                <input value={editForm.mobile} onChange={e => setEditForm({...editForm, mobile: e.target.value})} />
-                
+                <input
+                  value={editForm.mobile}
+                  onChange={(e) =>
+                    setEditForm({ ...editForm, mobile: e.target.value })
+                  }
+                />
+
                 <label>Basic Salary</label>
-                <input type="number" value={editForm.basicSalary} onChange={e => setEditForm({...editForm, basicSalary: e.target.value})} />
-                
+                <input
+                  type="number"
+                  value={editForm.basicSalary}
+                  onChange={(e) =>
+                    setEditForm({ ...editForm, basicSalary: e.target.value })
+                  }
+                />
+
                 <div className="btn-group">
-                  <button className="btn-primary" onClick={handleUpdate}><FaSave/> Save</button>
-                  <button className="btn-secondary" onClick={() => setIsEditing(false)}><FaTimes/> Cancel</button>
+                  <button className="btn-primary" onClick={handleUpdate}>
+                    <FaSave /> Save
+                  </button>
+                  <button
+                    className="btn-secondary"
+                    onClick={() => setIsEditing(false)}
+                  >
+                    <FaTimes /> Cancel
+                  </button>
                 </div>
               </div>
             )}
@@ -219,107 +292,147 @@ const HrAdminEmployeeView = () => {
           {/* 2. MANUAL ATTENDANCE (FIXED: Now properly stacked below profile) */}
           <div className="modern-card manual-card">
             <div className="card-header-small">
-                <h4><FaClock className="icon-orange"/> Manual Attendance</h4>
+              <h4>
+                <FaClock className="icon-orange" /> Manual Attendance
+              </h4>
             </div>
             <p className="helper-text">Fix attendance errors manually.</p>
             <div className="manual-form">
               <div className="input-group">
-                  <label>Date</label>
-                  <input type="date" value={manualDate} onChange={e => setManualDate(e.target.value)} />
+                <label>Date</label>
+                <input
+                  type="date"
+                  value={manualDate}
+                  onChange={(e) => setManualDate(e.target.value)}
+                />
               </div>
               <div className="input-group">
-                  <label>Status</label>
-                  <select value={manualStatus} onChange={e => setManualStatus(e.target.value)}>
-                    <option value="Present">Present</option>
-                    <option value="On Leave">Mark Paid Leave</option>
-                    <option value="Absent">Mark Absent (Unpaid)</option>
-                    <option value="HalfDay">Half Day</option>
-                  </select>
+                <label>Status</label>
+                <select
+                  value={manualStatus}
+                  onChange={(e) => setManualStatus(e.target.value)}
+                >
+                  <option value="Present">Present</option>
+                  <option value="On Leave">Mark Paid Leave</option>
+                  <option value="Absent">Mark Absent (Unpaid)</option>
+                  <option value="HalfDay">Half Day</option>
+                </select>
               </div>
-              <button className="btn-primary full-width" onClick={markManualAttendance}>Update Attendance</button>
+              <button
+                className="btn-primary full-width"
+                onClick={markManualAttendance}
+              >
+                Update Attendance
+              </button>
             </div>
           </div>
         </aside>
 
-
         {/* === RIGHT COLUMN: DATA & HISTORY === */}
         <main className="right-panel">
-
           {/* 1. STATS OVERVIEW */}
           <section className="stats-row">
             <div className="stat-widget">
-                <div className="stat-icon green"><FaCheckCircle/></div>
-                <div className="stat-data">
-                    <strong>{totalPresent}</strong>
-                    <span>Present Days</span>
-                </div>
+              <div className="stat-icon green">
+                <FaCheckCircle />
+              </div>
+              <div className="stat-data">
+                <strong>{totalPresent}</strong>
+                <span>Present Days</span>
+              </div>
             </div>
             <div className="stat-widget blue">
-                <div className="stat-icon blue"><FaLaptopHouse/></div>
-                <div className="stat-data">
-                    <strong>{wfhCount}</strong>
-                    <span>WFH Days</span>
-                </div>
+              <div className="stat-icon blue">
+                <FaLaptopHouse />
+              </div>
+              <div className="stat-data">
+                <strong>{wfhCount}</strong>
+                <span>WFH Days</span>
+              </div>
             </div>
             <div className="stat-widget orange">
-                <div className="stat-icon orange"><FaPlaneDeparture/></div>
-                <div className="stat-data">
-                    <strong>{approvedLeaves}</strong>
-                    <span>Leaves Approved</span>
-                </div>
+              <div className="stat-icon orange">
+                <FaPlaneDeparture />
+              </div>
+              <div className="stat-data">
+                <strong>{approvedLeaves}</strong>
+                <span>Leaves Approved</span>
+              </div>
             </div>
-             <div className="stat-widget red">
-                <div className="stat-icon red"><FaExclamationTriangle/></div>
-                <div className="stat-data">
-                    <strong>{totalAbsent}</strong>
-                    <span>Absent</span>
-                </div>
+            <div className="stat-widget red">
+              <div className="stat-icon red">
+                <FaExclamationTriangle />
+              </div>
+              <div className="stat-data">
+                <strong>{totalAbsent}</strong>
+                <span>Absent</span>
+              </div>
             </div>
           </section>
 
           {/* 2. PAYROLL ENGINE */}
           <section className="modern-card payroll-section">
             <div className="card-header">
-                <h3><FaCalculator/> Salary Calculator</h3>
+              <h3>
+                <FaCalculator /> Salary Calculator
+              </h3>
             </div>
             <div className="payroll-controls">
-                <div className="date-group">
-                    <div className="input-wrap">
-                        <label>From</label>
-                        <input type="date" value={dates.startDate} onChange={e => setDates({...dates, startDate: e.target.value})} />
-                    </div>
-                    <div className="input-wrap">
-                        <label>To</label>
-                        <input type="date" value={dates.endDate} onChange={e => setDates({...dates, endDate: e.target.value})} />
-                    </div>
+              <div className="date-group">
+                <div className="input-wrap">
+                  <label>From</label>
+                  <input
+                    type="date"
+                    value={dates.startDate}
+                    onChange={(e) =>
+                      setDates({ ...dates, startDate: e.target.value })
+                    }
+                  />
                 </div>
-                <button className="btn-primary btn-calc" onClick={calculateSalary} disabled={calculating}>
-                    {calculating ? 'Calculating...' : 'Calculate Net Salary'}
-                </button>
+                <div className="input-wrap">
+                  <label>To</label>
+                  <input
+                    type="date"
+                    value={dates.endDate}
+                    onChange={(e) =>
+                      setDates({ ...dates, endDate: e.target.value })
+                    }
+                  />
+                </div>
+              </div>
+              <button
+                className="btn-primary btn-calc"
+                onClick={calculateSalary}
+                disabled={calculating}
+              >
+                {calculating ? "Calculating..." : "Calculate Net Salary"}
+              </button>
             </div>
 
             {payrollStats && (
               <div className="payroll-result animate-slide-up">
                 <div className="result-grid">
-                    <div className="res-box">
-                        <span>Payable Days</span>
-                        <strong>{payrollStats.totalPayableDays}</strong>
-                    </div>
-                    <div className="res-box">
-                        <span>Unpaid (LWP)</span>
-                        <strong>{payrollStats.unpaidLeaveCount}</strong>
-                    </div>
-                    <div className="res-box">
-                        <span>Holidays</span>
-                        <strong>{payrollStats.holidayCount}</strong>
-                    </div>
-                    <div className="res-box total">
-                        <span>Net Salary</span>
-                        <strong>₹{payrollStats.estimatedSalary.toLocaleString()}</strong>
-                    </div>
+                  <div className="res-box">
+                    <span>Payable Days</span>
+                    <strong>{payrollStats.totalPayableDays}</strong>
+                  </div>
+                  <div className="res-box">
+                    <span>Unpaid (LWP)</span>
+                    <strong>{payrollStats.unpaidLeaveCount}</strong>
+                  </div>
+                  <div className="res-box">
+                    <span>Holidays</span>
+                    <strong>{payrollStats.holidayCount}</strong>
+                  </div>
+                  <div className="res-box total">
+                    <span>Net Salary</span>
+                    <strong>
+                      ₹{payrollStats.estimatedSalary.toLocaleString()}
+                    </strong>
+                  </div>
                 </div>
                 <div className="breakdown-note">
-                    <small>Logic Used: {payrollStats.breakdown}</small>
+                  <small>Logic Used: {payrollStats.breakdown}</small>
                 </div>
               </div>
             )}
@@ -328,39 +441,74 @@ const HrAdminEmployeeView = () => {
           {/* 3. LEAVE REQUESTS */}
           <section className="modern-card">
             <div className="card-header">
-                <h3>Leave Request History</h3>
+              <h3>Leave Request History</h3>
             </div>
             <div className="table-wrapper">
               <table className="modern-table">
-                <thead><tr><th>Type</th><th>Duration</th><th>Dates</th><th>Status</th><th>Action</th></tr></thead>
+                <thead>
+                  <tr>
+                    <th>Type</th>
+                    <th>Duration</th>
+                    <th>Dates</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
                 <tbody>
-                  {leaves.length === 0 ? <tr><td colSpan="5" className="empty">No leave requests found</td></tr> :
-                    leaves.map(l => (
+                  {leaves.length === 0 ? (
+                    <tr>
+                      <td colSpan="5" className="empty">
+                        No leave requests found
+                      </td>
+                    </tr>
+                  ) : (
+                    leaves.map((l) => (
                       <tr key={l._id}>
                         <td>
-                            <span className={`type-tag ${l.leaveType === 'Unpaid' ? 'unpaid' : 'paid'}`}>
-                                {l.leaveType}
-                            </span>
+                          <span
+                            className={`type-tag ${
+                              l.leaveType === "Unpaid" ? "unpaid" : "paid"
+                            }`}
+                          >
+                            {l.leaveType}
+                          </span>
                         </td>
                         <td>{l.dayType}</td>
                         <td>
-                            <div className="date-cell">
-                                <span>{new Date(l.startDate).toLocaleDateString()}</span>
-                                <span className="arrow">to</span>
-                                <span>{new Date(l.endDate).toLocaleDateString()}</span>
-                            </div>
+                          <div className="date-cell">
+                            <span>
+                              {new Date(l.startDate).toLocaleDateString()}
+                            </span>
+                            <span className="arrow">to</span>
+                            <span>
+                              {new Date(l.endDate).toLocaleDateString()}
+                            </span>
+                          </div>
                         </td>
-                        <td><span className={`status-pill ${l.status.toLowerCase()}`}>{l.status}</span></td>
                         <td>
-                          {l.status === 'Pending' ? (
-                             <button className="btn-xs approve" onClick={() => handleLeaveAction(l._id, 'Approved')}>Approve</button>
+                          <span
+                            className={`status-pill ${l.status.toLowerCase()}`}
+                          >
+                            {l.status}
+                          </span>
+                        </td>
+                        <td>
+                          {l.status === "Pending" ? (
+                            <button
+                              className="btn-xs approve"
+                              onClick={() =>
+                                handleLeaveAction(l._id, "Approved")
+                              }
+                            >
+                              Approve
+                            </button>
                           ) : (
-                             <span className="text-muted">Completed</span>
+                            <span className="text-muted">Completed</span>
                           )}
                         </td>
                       </tr>
                     ))
-                  }
+                  )}
                 </tbody>
               </table>
             </div>
@@ -369,8 +517,8 @@ const HrAdminEmployeeView = () => {
           {/* 4. DAILY ATTENDANCE LOG */}
           <section className="modern-card">
             <div className="card-header">
-                <h3>Daily Attendance Log</h3>
-                <span className="badge-count">{history.length} Records</span>
+              <h3>Daily Attendance Log</h3>
+              <span className="badge-count">{history.length} Records</span>
             </div>
             <div className="table-wrapper">
               <table className="modern-table">
@@ -384,50 +532,81 @@ const HrAdminEmployeeView = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {history.length === 0 ? <tr><td colSpan="5" className="empty">No attendance records</td></tr> : 
-                    history.slice(0, 30).map(rec => (
+                  {history.length === 0 ? (
+                    <tr>
+                      <td colSpan="5" className="empty">
+                        No attendance records
+                      </td>
+                    </tr>
+                  ) : (
+                    history.slice(0, 30).map((rec) => (
                       <tr key={rec._id} className="hover-row">
-                        <td className="date-cell-bold">{new Date(rec.date).toLocaleDateString()}</td>
-                        <td>
-                           {rec.status === 'Absent' ? (
-                               <span className="dash">-</span>
-                           ) : (
-                               <div className="punch-times">
-                                 <div className="time-row in">
-                                    <FaSignInAlt className="icon-tiny text-green"/> 
-                                    {rec.punchInTime ? new Date(rec.punchInTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '--:--'}
-                                 </div>
-                                 <div className="time-row out">
-                                    <FaSignOutAlt className="icon-tiny text-red"/> 
-                                    {rec.punchOutTime ? new Date(rec.punchOutTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '--:--'}
-                                 </div>
-                               </div>
-                           )}
+                        <td className="date-cell-bold">
+                          {new Date(rec.date).toLocaleDateString()}
                         </td>
                         <td>
-                            <span className={`status-pill ${rec.status.replace(' ', '').toLowerCase()}`}>
-                                {rec.status}
-                            </span>
+                          {rec.status === "Absent" ? (
+                            <span className="dash">-</span>
+                          ) : (
+                            <div className="punch-times">
+                              <div className="time-row in">
+                                <FaSignInAlt className="icon-tiny text-green" />
+                                {rec.punchInTime
+                                  ? new Date(
+                                      rec.punchInTime
+                                    ).toLocaleTimeString([], {
+                                      hour: "2-digit",
+                                      minute: "2-digit",
+                                    })
+                                  : "--:--"}
+                              </div>
+                              <div className="time-row out">
+                                <FaSignOutAlt className="icon-tiny text-red" />
+                                {rec.punchOutTime
+                                  ? new Date(
+                                      rec.punchOutTime
+                                    ).toLocaleTimeString([], {
+                                      hour: "2-digit",
+                                      minute: "2-digit",
+                                    })
+                                  : "--:--"}
+                              </div>
+                            </div>
+                          )}
                         </td>
                         <td>
-                            <span className="mode-text">{rec.mode}</span>
+                          <span
+                            className={`status-pill ${rec.status
+                              .replace(" ", "")
+                              .toLowerCase()}`}
+                          >
+                            {rec.status}
+                          </span>
+                        </td>
+                        <td>
+                          <span className="mode-text">{rec.mode}</span>
                         </td>
                         <td className="report-text">
-                           {rec.dailyReport ? 
-                              <div className="report-link" title={rec.dailyReport}>
-                                <FaFileAlt className="icon-tiny"/> View
-                              </div> : 
-                              <span className="remarks">{rec.remarks || '-'}</span>
-                           }
+                          {rec.dailyReport ? (
+                            <div
+                              className="report-link"
+                              title={rec.dailyReport}
+                            >
+                              <FaFileAlt className="icon-tiny" /> View
+                            </div>
+                          ) : (
+                            <span className="remarks">
+                              {rec.remarks || "-"}
+                            </span>
+                          )}
                         </td>
                       </tr>
                     ))
-                  }
+                  )}
                 </tbody>
               </table>
             </div>
           </section>
-
         </main>
       </div>
 
