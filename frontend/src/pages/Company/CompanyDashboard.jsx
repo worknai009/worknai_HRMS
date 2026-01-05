@@ -244,13 +244,11 @@ const CompanyDashboard = () => {
                 employees.map((emp) => (
                   <div key={emp._id} className="list-item">
                     <img
-                      src={
-                        getImageUrl(emp.profileImage) ||
-                        "https://via.placeholder.com/40"
-                      }
-                      onError={(e) =>
-                        (e.target.src = "https://via.placeholder.com/40")
-                      }
+                      src={getImageUrl(emp.profileImage)}
+                      onError={(e) => {
+                        e.currentTarget.onerror = null;
+                        e.currentTarget.src = `${window.location.origin}/uploads/default-avatar.jpg`;
+                      }}
                       className="avatar-img"
                       alt="emp"
                     />

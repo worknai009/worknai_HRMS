@@ -25,9 +25,15 @@ import {
 
 // Helper for Image URL
 const getImageUrl = (path) => {
-  if (!path) return "https://via.placeholder.com/150";
+  const FALLBACK = `${window.location.origin}/uploads/default-avatar.jpg`;
+
+  if (!path) return FALLBACK;
   if (path.startsWith("http")) return path;
-  return `http://localhost:5000/${path.replace(/\\/g, "/")}`;
+
+  const clean = path.replace(/\\/g, "/").replace(/^\/+/, "");
+  const finalPath = clean.startsWith("uploads/") ? clean : `uploads/${clean}`;
+
+  return `${window.location.origin}/${finalPath}`;
 };
 
 const HrAdminEmployeeView = () => {
@@ -202,9 +208,10 @@ const HrAdminEmployeeView = () => {
               <img
                 src={getImageUrl(user.profileImage)}
                 alt="Profile"
-                onError={(e) =>
-                  (e.target.src = "https://via.placeholder.com/150")
-                }
+                onError={(e) => {
+                  e.currentTarget.onerror = null;
+                  e.currentTarget.src = `${window.location.origin}/uploads/default-avatar.jpg`;
+                }}
               />
             </div>
 
