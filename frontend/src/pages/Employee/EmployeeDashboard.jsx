@@ -18,7 +18,8 @@ import {
   FaTimes,
   FaPlaneDeparture,
   FaCalendarAlt,
-} from
+} from "react-icons/fa";
+
 // Helper for Image URL
 const getImageUrl = (path) => {
   if (!path) return "https://via.placeholder.com/150";
@@ -157,7 +158,7 @@ const EmployeeDashboard = () => {
       {/* HEADER */}
       <header className="dash-header">
         <div className="welcome-text">
-          <h1>Hello, {user.name.split(" ")[0]} 👋</h1>
+          <h1>Hellossss, {user.name.split(" ")[0]} 👋</h1>
           <p>Let's make today productive!</p>
         </div>
         <div className="header-actions">
