@@ -1,11 +1,23 @@
-import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { 
-  FaFingerprint, FaShieldAlt, FaChartLine, FaMobileAlt, 
-  FaArrowRight, FaBuilding, FaUserCheck, FaUsers, 
-  FaCloudUploadAlt, FaLock, FaUserShield, FaCheckCircle, 
-  FaGlobeAmericas, FaMapMarkerAlt, FaFileInvoiceDollar, FaAward
-} from 'react-icons/fa';
+import React, { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
+import {
+  FaFingerprint,
+  FaShieldAlt,
+  FaChartLine,
+  FaMobileAlt,
+  FaArrowRight,
+  FaBuilding,
+  FaUserCheck,
+  FaUsers,
+  FaCloudUploadAlt,
+  FaLock,
+  FaUserShield,
+  FaCheckCircle,
+  FaGlobeAmericas,
+  FaMapMarkerAlt,
+  FaFileInvoiceDollar,
+  FaAward,
+} from "react-icons/fa";
 
 const Home = () => {
   const [showSplash, setShowSplash] = useState(true);
@@ -21,7 +33,9 @@ const Home = () => {
     return (
       <div className="netflix-splash">
         <div className="splash-content">
-          <h1 className="main-logo">SMART<span>HRMS</span></h1>
+          <h1 className="main-logo">
+            SMART<span>HRMS</span>
+          </h1>
           <div className="progress-container">
             <div className="progress-fill"></div>
           </div>
@@ -36,53 +50,93 @@ const Home = () => {
       {/* --- HERO SECTION --- */}
       <section className="hero-section">
         <div className="hero-content animate-up">
-          <div className="trust-badge"><FaShieldAlt/> ISO 27001 Certified Security</div>
-          <h1>Enterprise Grade <span>Biometric</span> Management System</h1>
+          <div className="trust-badge">
+            <FaShieldAlt /> ISO 27001 Certified Security
+          </div>
+          <h1>
+            Enterpriseeeee Grade <span>Biometric</span> Management System
+          </h1>
           <p>
-            The most trusted AI-powered SaaS platform for workforce automation. 
-            SmartHRMS empowers corporations worldwide with real-time data integrity.
+            The most trusted AI-powered SaaS platform for workforce automation.
+            SmartHRMS empowers corporations worldwide with real-time data
+            integrity.
           </p>
           <div className="hero-btns">
-            <Link to="/register" className="btn-primary-lg">Launch Now <FaArrowRight/></Link>
-            <Link to="/contact" className="btn-outline-lg">Book Demo</Link>
+            <Link to="/register" className="btn-primary-lg">
+              Launch Now <FaArrowRight />
+            </Link>
+            <Link to="/contact" className="btn-outline-lg">
+              Book Demo
+            </Link>
           </div>
         </div>
         <div className="hero-visual animate-fade">
-          <img src="https://images.unsplash.com/photo-1551434678-e076c223a692?auto=format&fit=crop&w=800&q=80" alt="Office Visual" className="main-img" />
-          <div className="floating-stat card-1"><FaUserCheck/> 99.9% Accuracy</div>
-          <div className="floating-stat card-2"><FaLock/> AES-256 Encrypted</div>
+          <img
+            src="https://images.unsplash.com/photo-1551434678-e076c223a692?auto=format&fit=crop&w=800&q=80"
+            alt="Office Visual"
+            className="main-img"
+          />
+          <div className="floating-stat card-1">
+            <FaUserCheck /> 99.9% Accuracy
+          </div>
+          <div className="floating-stat card-2">
+            <FaLock /> AES-256 Encrypted
+          </div>
         </div>
       </section>
 
       {/* --- STATS RIBBON --- */}
       <div className="stats-ribbon">
-          <div className="stat-item"><h3>1.2M+</h3><p>Active Users</p></div>
-          <div className="stat-item"><h3>₹500Cr+</h3><p>Payroll Processed</p></div>
-          <div className="stat-item"><h3>0.01s</h3><p>Sync Speed</p></div>
+        <div className="stat-item">
+          <h3>1.2M+</h3>
+          <p>Active Users</p>
+        </div>
+        <div className="stat-item">
+          <h3>₹500Cr+</h3>
+          <p>Payroll Processed</p>
+        </div>
+        <div className="stat-item">
+          <h3>0.01s</h3>
+          <p>Sync Speed</p>
+        </div>
       </div>
 
       {/* --- CORE CAPABILITIES (Trust) --- */}
       <section className="trust-section">
         <div className="container">
           <div className="centered-header">
-            <h2>Why Organizations <span>Scale</span> with Us</h2>
-            <p>Move beyond manual registers. Embrace high-precision accountability.</p>
+            <h2>
+              Why Organizations <span>Scale</span> with Us
+            </h2>
+            <p>
+              Move beyond manual registers. Embrace high-precision
+              accountability.
+            </p>
           </div>
           <div className="trust-grid">
             <div className="trust-card">
-              <FaFingerprint className="blue-t"/>
+              <FaFingerprint className="blue-t" />
               <h4>Neural Face-Link</h4>
-              <p>AI that ensures 100% presence verification for every single punch-in.</p>
+              <p>
+                AI that ensures 100% presence verification for every single
+                punch-in.
+              </p>
             </div>
             <div className="trust-card">
-              <FaMapMarkerAlt className="red-t"/>
+              <FaMapMarkerAlt className="red-t" />
               <h4>Hyper Geofence</h4>
-              <p>Lock attendance to specific GPS coordinates with sub-meter accuracy.</p>
+              <p>
+                Lock attendance to specific GPS coordinates with sub-meter
+                accuracy.
+              </p>
             </div>
             <div className="trust-card">
-              <FaUserShield className="purple-t"/>
+              <FaUserShield className="purple-t" />
               <h4>Legal Ready</h4>
-              <p>Automated PF, ESI, and Tax calculations following local labour laws.</p>
+              <p>
+                Automated PF, ESI, and Tax calculations following local labour
+                laws.
+              </p>
             </div>
           </div>
         </div>
@@ -92,45 +146,66 @@ const Home = () => {
       <section className="product-showcase">
         <div className="showcase-container">
           <div className="showcase-text">
-            <h2>Workflow on <span>Autopilot</span></h2>
+            <h2>
+              Workflow on <span>Autopilot</span>
+            </h2>
             <ul className="premium-list">
-              <li><FaCheckCircle/> Automated Overtime Logic</li>
-              <li><FaCheckCircle/> Real-time WFH Tracking</li>
-              <li><FaCheckCircle/> Multi-Level Approvals</li>
+              <li>
+                <FaCheckCircle /> Automated Overtime Logic
+              </li>
+              <li>
+                <FaCheckCircle /> Real-time WFH Tracking
+              </li>
+              <li>
+                <FaCheckCircle /> Multi-Level Approvals
+              </li>
             </ul>
-            <Link to="/features" className="explore-link">Full Feature Suite <FaArrowRight/></Link>
+            <Link to="/features" className="explore-link">
+              Full Feature Suite <FaArrowRight />
+            </Link>
           </div>
           <div className="showcase-img">
-            <img src="https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=800&q=80" alt="Analytics" />
+            <img
+              src="https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=800&q=80"
+              alt="Analytics"
+            />
           </div>
         </div>
       </section>
 
       {/* --- GLOBAL BANNER --- */}
       <section className="global-presence">
-          <div className="content">
-            <h2>Trusted by <span>Enterprise</span> Leaders</h2>
-            <div className="btn-row">
-              <Link to="/contact" className="btn-white">Talk to Experts</Link>
-              <Link to="/register" className="btn-transparent">Start Free Trial</Link>
-            </div>
+        <div className="content">
+          <h2>
+            Trusted by <span>Enterprise</span> Leaders
+          </h2>
+          <div className="btn-row">
+            <Link to="/contact" className="btn-white">
+              Talk to Experts
+            </Link>
+            <Link to="/register" className="btn-transparent">
+              Start Free Trial
+            </Link>
           </div>
+        </div>
       </section>
 
       <footer className="footer-main">
         <div className="footer-grid">
-           <div className="footer-brand">
-              <h3>SMART<span>HRMS</span></h3>
-              <p>Leading AI Biometric SaaS for the modern Indian workforce.</p>
-           </div>
-           <div className="footer-links">
-              <h4>Solutions</h4>
-              <Link to="/features">Attendance</Link>
-              <Link to="/features">Payroll</Link>
-           </div>
+          <div className="footer-brand">
+            <h3>
+              SMART<span>HRMS</span>
+            </h3>
+            <p>Leading AI Biometric SaaS for the modern Indian workforce.</p>
+          </div>
+          <div className="footer-links">
+            <h4>Solutions</h4>
+            <Link to="/features">Attendance</Link>
+            <Link to="/features">Payroll</Link>
+          </div>
         </div>
         <div className="footer-bottom">
-           © 2025 SmartHRMS SaaS India. ISO Certified.
+          © 2025 SmartHRMS SaaS India. ISO Certified.
         </div>
       </footer>
 
