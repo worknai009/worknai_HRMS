@@ -22,10 +22,15 @@ import {
 
 // Helper for Image URL
 const getImageUrl = (path) => {
-  if (!path) return "/default-avatar.png";
+  // Always serve a real file from backend uploads
+  const FALLBACK = `${window.location.origin}/uploads/default-avatar.jpg`;
+
+  if (!path) return FALLBACK;
   if (path.startsWith("http")) return path;
 
   const clean = path.replace(/\\/g, "/").replace(/^\/+/, "");
+
+  // if DB already stores "uploads/xxx.jpg" or "/uploads/xxx.jpg"
   const finalPath = clean.startsWith("uploads/") ? clean : `uploads/${clean}`;
 
   return `${window.location.origin}/${finalPath}`;
@@ -184,7 +189,7 @@ const EmployeeDashboard = () => {
               alt="Profile"
               onError={(e) => {
                 e.currentTarget.onerror = null;
-                e.currentTarget.src = "/default-avatar.png";
+                e.currentTarget.src = `${window.location.origin}/uploads/default-avatar.jpg`;
               }}
             />
             <span
