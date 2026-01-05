@@ -24,11 +24,10 @@ import {
 } from "react-icons/fa";
 
 // Helper for Image URL
-export const getFileUrl = (p) => {
-  if (!p) return "/default-avatar.jpg"; // fallback local
-  if (p.startsWith("http")) return p; // already full url
-  const clean = p.replace(/\\/g, "/").replace(/^\/+/, ""); // remove leading slashes
-  return `${window.location.origin}/${clean}`;
+const getImageUrl = (path) => {
+  if (!path) return "https://via.placeholder.com/150";
+  if (path.startsWith("http")) return path;
+  return `http://localhost:5000/${path.replace(/\\/g, "/")}`;
 };
 
 const HrAdminEmployeeView = () => {
@@ -203,10 +202,9 @@ const HrAdminEmployeeView = () => {
               <img
                 src={getImageUrl(user.profileImage)}
                 alt="Profile"
-                onError={(e) => {
-                  e.currentTarget.onerror = null;
-                  e.currentTarget.src = "/default-avatar.png";
-                }}
+                onError={(e) =>
+                  (e.target.src = "https://via.placeholder.com/150")
+                }
               />
             </div>
 
