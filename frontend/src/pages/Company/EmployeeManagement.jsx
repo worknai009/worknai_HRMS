@@ -28,6 +28,18 @@ const EmployeeManagement = () => {
     mobile: "",
     designation: "",
   });
+  // Helper for Image URL (Company/EmployeeManagement)
+  const getImageUrl = (path) => {
+    const FALLBACK = `${window.location.origin}/uploads/default-avatar.jpg`;
+
+    if (!path) return FALLBACK;
+    if (typeof path === "string" && path.startsWith("http")) return path;
+
+    const clean = String(path).replace(/\\/g, "/").replace(/^\/+/, "");
+    const finalPath = clean.startsWith("uploads/") ? clean : `uploads/${clean}`;
+
+    return `${window.location.origin}/${finalPath}`;
+  };
 
   const fetchEmployees = async () => {
     try {
@@ -118,7 +130,8 @@ const EmployeeManagement = () => {
             <div key={emp._id} className="emp-card">
               <div className="card-top">
                 <img
-                  src={getImageUrl(user.profileImage)}
+                  className="avatar-img"
+                  src={getImageUrl(emp.profileImage)}
                   alt="Profile"
                   onError={(e) => {
                     e.currentTarget.onerror = null;
