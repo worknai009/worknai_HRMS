@@ -1,67 +1,75 @@
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom'; // ✅ Added useLocation
-import { ToastContainer } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
+import React from "react";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  useLocation,
+} from "react-router-dom";
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 // Context & Utils
-import { AuthProvider } from './context/AuthContext';
-import ProtectedRoute from './components/ProtectedRoute';
-import ScrollToTop from './utils/ScrollToTop';
+import { AuthProvider } from "./context/AuthContext";
+import ProtectedRoute from "./components/ProtectedRoute";
+import ScrollToTop from "./utils/ScrollToTop";
 
 // Common Components
-import Navbar from './components/Common/Navbar';
-import Footer from './components/Common/Footer';
+import Navbar from "./components/Common/Navbar";
+import Footer from "./components/Common/Footer";
 
 // Landing Pages
-import Home from './pages/Landing/Home';
-import About from './pages/Landing/About';
-import Services from './pages/Landing/Services';
-import Features from './pages/Landing/Features';
-import Contact from './pages/Landing/Contact';
+import Home from "./pages/Landing/Home";
+import About from "./pages/Landing/About";
+import Services from "./pages/Landing/Services";
+import Features from "./pages/Landing/Features";
+import Contact from "./pages/Landing/Contact";
 
 // Auth Pages
-import SuperAdminLogin from './pages/Auth/SuperAdminLogin';
-import CompanyLogin from './pages/Auth/CompanyLogin';
-import AdminLogin from './pages/Auth/AdminLogin';
-import EmployeeLogin from './pages/Auth/EmployeeLogin';
-import Register from './pages/Auth/Register';
-import CompanyInquiry from './pages/Auth/CompanyInquiry';
+import SuperAdminLogin from "./pages/Auth/SuperAdminLogin";
+import CompanyLogin from "./pages/Auth/CompanyLogin";
+import AdminLogin from "./pages/Auth/AdminLogin";
+import EmployeeLogin from "./pages/Auth/EmployeeLogin";
+import Register from "./pages/Auth/Register";
+import CompanyInquiry from "./pages/Auth/CompanyInquiry";
 
 // Dashboards & Modules
-import SuperAdminDashboard from './pages/SuperAdmin/SuperAdminDashboard';
-import InquiryManagement from './pages/SuperAdmin/InquiryManagement';
-import CompanyDashboard from './pages/Company/CompanyDashboard';
-import HRManagement from './pages/Company/HRManagement';
-import HrAdminDashboard from './pages/Admin/HrAdminDashboard';
-import AdminEmployeeView from './pages/Admin/HrAdminEmployeeView';
-import EmployeeDashboard from './pages/Employee/EmployeeDashboard';
-import Attendance from './pages/Employee/Attendance';
-import LeaveRequest from './pages/Employee/LeaveRequest';
+import SuperAdminDashboard from "./pages/SuperAdmin/SuperAdminDashboard";
+import InquiryManagement from "./pages/SuperAdmin/InquiryManagement";
+
+import CompanyDashboard from "./pages/Company/CompanyDashboard";
+import HRManagement from "./pages/Company/HRManagement";
+// ✅ IMPORT NEW EMPLOYEE MANAGEMENT PAGE
+import EmployeeManagement from "./pages/Company/EmployeeManagement";
+
+import HrAdminDashboard from "./pages/Admin/HrAdminDashboard";
+import AdminEmployeeView from "./pages/Admin/HrAdminEmployeeView";
+import EmployeeDashboard from "./pages/Employee/EmployeeDashboard";
+import Attendance from "./pages/Employee/Attendance";
+import LeaveRequest from "./pages/Employee/LeaveRequest";
 
 /* =========================================================
-   ✅ NEW COMPONENT: CONDITIONAL FOOTER
-   Ye check karega ki agar URL dashboard ka hai to Footer mat dikhao
+   CONDITIONAL FOOTER COMPONENT
    ========================================================= */
 const ConditionalFooter = () => {
   const location = useLocation();
 
-  // Ye wo raste (paths) hain jahan Footer NAHI dikhna chahiye
   const hideFooterPrefixes = [
-    '/superadmin',
-    '/super-admin',
-    '/company',
-    '/hr',
-    '/employee'
+    "/superadmin",
+    "/super-admin",
+    "/company",
+    "/hr",
+    "/employee",
   ];
 
-  // Check karo ki kya current path inme se kisi se start hota hai?
-  const shouldHide = hideFooterPrefixes.some(prefix => location.pathname.startsWith(prefix));
+  const shouldHide = hideFooterPrefixes.some((prefix) =>
+    location.pathname.startsWith(prefix)
+  );
 
   if (shouldHide) {
-    return null; // Footer mat dikhao
+    return null;
   }
 
-  return <Footer />; // Footer dikhao
+  return <Footer />;
 };
 
 function App() {
@@ -75,7 +83,6 @@ function App() {
 
         <div className="main-content">
           <Routes>
-
             {/* ---------------- PUBLIC ROUTES ---------------- */}
             <Route path="/" element={<Home />} />
             <Route path="/about" element={<About />} />
@@ -92,37 +99,55 @@ function App() {
             <Route path="/register" element={<Register />} />
 
             {/* ---------------- SUPER ADMIN ---------------- */}
-            <Route element={<ProtectedRoute allowedRoles={['SuperAdmin']} />}>
-              <Route path="/superadmin/dashboard" element={<SuperAdminDashboard />} />
-              <Route path="/super-admin/inquiries" element={<InquiryManagement />} />
+            <Route element={<ProtectedRoute allowedRoles={["SuperAdmin"]} />}>
+              <Route
+                path="/superadmin/dashboard"
+                element={<SuperAdminDashboard />}
+              />
+              <Route
+                path="/super-admin/inquiries"
+                element={<InquiryManagement />}
+              />
             </Route>
 
             {/* ---------------- COMPANY OWNER ---------------- */}
-            <Route element={<ProtectedRoute allowedRoles={['CompanyAdmin']} />}>
+            <Route element={<ProtectedRoute allowedRoles={["CompanyAdmin"]} />}>
               <Route path="/company/dashboard" element={<CompanyDashboard />} />
               <Route path="/company/hr-management" element={<HRManagement />} />
+
+              {/* ✅ NEW ROUTE FOR MANAGING EMPLOYEES (EDIT ID/PASS) */}
+              <Route
+                path="/company/employee-management"
+                element={<EmployeeManagement />}
+              />
             </Route>
 
             {/* ---------------- HR ADMIN ---------------- */}
-            <Route element={<ProtectedRoute allowedRoles={['Admin']} />}>
+            <Route element={<ProtectedRoute allowedRoles={["Admin"]} />}>
               <Route path="/hr/dashboard" element={<HrAdminDashboard />} />
-              <Route path="/hr/view-employee/:userId" element={<AdminEmployeeView />} />
+              <Route
+                path="/hr/view-employee/:userId"
+                element={<AdminEmployeeView />}
+              />
             </Route>
 
             {/* ---------------- EMPLOYEE ---------------- */}
-            <Route element={<ProtectedRoute allowedRoles={['Employee', 'Admin']} />}>
-              <Route path="/employee/dashboard" element={<EmployeeDashboard />} />
+            <Route
+              element={<ProtectedRoute allowedRoles={["Employee", "Admin"]} />}
+            >
+              <Route
+                path="/employee/dashboard"
+                element={<EmployeeDashboard />}
+              />
               <Route path="/employee/attendance" element={<Attendance />} />
               <Route path="/employee/leaves" element={<LeaveRequest />} />
             </Route>
 
-            {/* ---------------- 404 FALLBACK (LAST ONLY) ---------------- */}
+            {/* ---------------- 404 FALLBACK ---------------- */}
             <Route path="*" element={<Home />} />
-
           </Routes>
         </div>
 
-        {/* ✅ Replace <Footer /> with <ConditionalFooter /> */}
         <ConditionalFooter />
 
         <style>{`
@@ -136,7 +161,6 @@ function App() {
             padding-top: 80px;
           }
         `}</style>
-
       </AuthProvider>
     </Router>
   );

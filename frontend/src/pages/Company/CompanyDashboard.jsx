@@ -11,8 +11,9 @@ import {
   FaMapMarkerAlt,
   FaArrowRight,
   FaCamera,
-  FaPlusCircle,
-  FaCircle,
+  FaSync,
+  FaExclamationTriangle,
+  FaTimes,
 } from "react-icons/fa";
 
 // Helper for Image URL
@@ -28,6 +29,10 @@ const CompanyDashboard = () => {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [logoPreview, setLogoPreview] = useState(null);
+  const [requesting, setRequesting] = useState(false);
+
+  // ✅ State to control the Custom Confirmation Modal
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
 
   /* ================= LOAD DATA ================= */
   useEffect(() => {
@@ -37,7 +42,7 @@ const CompanyDashboard = () => {
   const loadData = async () => {
     try {
       const res = await API.get("/company/profile");
-      setData(res.data); // Contains company, stats, employees, hrs
+      setData(res.data);
     } catch {
       console.error("Failed to load dashboard");
     } finally {
@@ -50,10 +55,8 @@ const CompanyDashboard = () => {
     const file = e.target.files[0];
     if (!file) return;
 
-    // Preview
     setLogoPreview(URL.createObjectURL(file));
 
-    // Upload
     const formData = new FormData();
     formData.append("logo", file);
 
@@ -61,21 +64,47 @@ const CompanyDashboard = () => {
       await API.put("/company/update", formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
-      toast.success("Logo Updated! 📸");
+      toast.success("Logo Updated Successfully! 📸");
     } catch {
       toast.error("Logo upload failed");
     }
   };
 
-  /* ================= REQUEST EXTRA HR ================= */
-  const requestExtraHr = async () => {
-    if (!window.confirm("Request Super Admin to increase HR limit?")) return;
+  /* ================= ACTION 1: OPEN MODAL ================= */
+  const handleRequestClick = () => {
+    // Open the custom modal instead of window.confirm
+    setShowConfirmModal(true);
+  };
+
+  /* ================= ACTION 2: CONFIRM & SEND REQUEST ================= */
+  const confirmRequest = async () => {
+    setShowConfirmModal(false); // Close Modal first
+    setRequesting(true); // Start loading state
+
     try {
       await API.post("/company/request-limit");
-      toast.success("Request Sent to Super Admin 📩");
-      loadData(); // Refresh to show pending status
-    } catch {
-      toast.error("Request failed");
+
+      // Success Message at Top Center
+      toast.success("Request Sent Successfully! 📩", {
+        position: "top-center",
+        autoClose: 4000,
+      });
+
+      // Optimistic UI Update (Turant Pending dikhana)
+      setData((prev) => ({
+        ...prev,
+        company: {
+          ...prev.company,
+          hrLimitRequest: "Pending",
+        },
+      }));
+
+      // Background Refresh
+      loadData();
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Request failed");
+    } finally {
+      setRequesting(false);
     }
   };
 
@@ -124,7 +153,6 @@ const CompanyDashboard = () => {
                 <div className="default-logo">{getInitials(company?.name)}</div>
               )}
 
-              {/* Hidden Upload Button */}
               <label className="upload-trigger">
                 <FaCamera />
                 <input
@@ -159,15 +187,23 @@ const CompanyDashboard = () => {
               </h3>
             </div>
 
+            {/* Logic: Pending hai to msg dikhao, nahi to Button dikhao */}
             {company?.hrLimitRequest === "Pending" ? (
-              <span className="badge pending">Request Pending...</span>
+              <div className="status-msg pending">
+                <FaSync className="spin" /> Request Pending...
+              </div>
             ) : (
               <button
                 className="req-btn"
-                onClick={requestExtraHr}
-                disabled={hrs.length < company?.maxHrAdmins}
+                onClick={handleRequestClick}
+                disabled={requesting || hrs.length < company?.maxHrAdmins}
+                title={
+                  hrs.length < company?.maxHrAdmins
+                    ? "You haven't reached the limit yet"
+                    : "Request more HR slots"
+                }
               >
-                Request Limit Increase
+                {requesting ? "Sending..." : "Request Limit Increase"}
               </button>
             )}
           </div>
@@ -232,7 +268,7 @@ const CompanyDashboard = () => {
               <h3>Recent Employees</h3>
               <button
                 className="view-more-btn"
-                onClick={() => navigate("/company/hr-management")}
+                onClick={() => navigate("/company/employee-management")}
               >
                 View All <FaArrowRight />
               </button>
@@ -265,6 +301,34 @@ const CompanyDashboard = () => {
         </div>
       </div>
 
+      {/* ✅ NEW CUSTOM CONFIRMATION MODAL */}
+      {showConfirmModal && (
+        <div className="modal-overlay">
+          <div className="confirm-modal zoom-in">
+            <div className="modal-icon warning">
+              <FaExclamationTriangle />
+            </div>
+            <h3>Request Limit Increase?</h3>
+            <p>
+              You have reached your HR Admin limit. This will send a formal
+              request to the Super Admin for approval.
+            </p>
+
+            <div className="modal-actions">
+              <button
+                className="btn-cancel"
+                onClick={() => setShowConfirmModal(false)}
+              >
+                Cancel
+              </button>
+              <button className="btn-confirm" onClick={confirmRequest}>
+                Yes, Send Request
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <style>{`
         .comp-dashboard { min-height: 100vh; background: #f8fafc; font-family: 'Segoe UI', sans-serif; color: #334155; }
         
@@ -294,14 +358,19 @@ const CompanyDashboard = () => {
         .meta-item { display: flex; align-items: center; gap: 8px; }
         .meta-item svg { color: #94a3b8; }
 
-        .plan-info { text-align: center; background: #f8fafc; padding: 20px 30px; border-radius: 16px; border: 1px solid #e2e8f0; min-width: 200px; }
+        .plan-info { text-align: center; background: #f8fafc; padding: 20px 30px; border-radius: 16px; border: 1px solid #e2e8f0; min-width: 220px; }
         .plan-header { color: #64748b; font-weight: 600; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.5px; margin-bottom: 8px; }
         .plan-stats h3 { margin: 0 0 15px; font-size: 1.8rem; color: #0f172a; font-weight: 800; }
         .plan-stats .divider { color: #cbd5e1; font-weight: 400; margin: 0 5px; }
+        
         .req-btn { background: #3b82f6; color: white; border: none; padding: 10px 16px; border-radius: 8px; font-size: 0.85rem; cursor: pointer; font-weight: 600; transition: 0.2s; width: 100%; box-shadow: 0 4px 6px rgba(59, 130, 246, 0.2); }
         .req-btn:hover { background: #2563eb; transform: translateY(-1px); }
         .req-btn:disabled { background: #e2e8f0; color: #94a3b8; cursor: not-allowed; box-shadow: none; transform: none; }
-        .badge.pending { background: #fff7ed; color: #d97706; padding: 6px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: 700; border: 1px solid #ffedd5; display: inline-block; }
+        
+        .status-msg { display: inline-flex; align-items: center; gap: 8px; font-weight: 700; font-size: 0.85rem; padding: 8px 15px; border-radius: 8px; width: 100%; justify-content: center; }
+        .status-msg.pending { background: #fff7ed; color: #d97706; border: 1px solid #ffedd5; }
+        .spin { animation: spin 1s infinite linear; }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 
         /* STATS GRID */
         .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 25px; margin-bottom: 40px; }
@@ -340,6 +409,37 @@ const CompanyDashboard = () => {
         .empty { padding: 30px; text-align: center; color: #94a3b8; font-style: italic; }
 
         .loader { display: flex; justify-content: center; align-items: center; height: 100vh; font-size: 1.2rem; color: #64748b; }
+
+        /* ✅ CUSTOM MODAL STYLES */
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 1000; backdrop-filter: blur(4px); }
+        
+        .confirm-modal { 
+          background: white; padding: 30px; border-radius: 16px; width: 90%; max-width: 400px; 
+          text-align: center; box-shadow: 0 20px 50px rgba(0,0,0,0.2); 
+        }
+        
+        .modal-icon { width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.8rem; margin: 0 auto 20px; }
+        .modal-icon.warning { background: #fff7ed; color: #f59e0b; }
+        
+        .confirm-modal h3 { margin: 0 0 10px; color: #1e293b; font-size: 1.3rem; }
+        .confirm-modal p { margin: 0 0 25px; color: #64748b; font-size: 0.95rem; line-height: 1.5; }
+        
+        .modal-actions { display: flex; gap: 15px; justify-content: center; }
+        
+        .btn-cancel { 
+          background: white; border: 1px solid #e2e8f0; padding: 10px 20px; border-radius: 10px; 
+          font-weight: 600; color: #64748b; cursor: pointer; transition: 0.2s; 
+        }
+        .btn-cancel:hover { background: #f1f5f9; }
+        
+        .btn-confirm { 
+          background: #3b82f6; border: none; padding: 10px 20px; border-radius: 10px; 
+          font-weight: 600; color: white; cursor: pointer; transition: 0.2s; 
+        }
+        .btn-confirm:hover { background: #2563eb; transform: translateY(-1px); }
+
+        .zoom-in { animation: zoomIn 0.3s ease-out forwards; }
+        @keyframes zoomIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
 
         @media(max-width: 900px) {
           .stats-grid, .lists-container { grid-template-columns: 1fr; }

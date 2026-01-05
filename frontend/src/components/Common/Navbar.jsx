@@ -20,15 +20,37 @@ const Navbar = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
+  // 1. Scroll Effect Logic
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20);
     window.addEventListener("scroll", onScroll);
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
+  // 2. ✅ AUTO LOGOUT ON REFRESH LOGIC
+  // Jaise hi user page refresh karega ya tab band karega, logout trigger hoga.
+  useEffect(() => {
+    const handleRefresh = () => {
+      if (user) {
+        logout(); // Context se logout function call karein
+      }
+    };
+
+    // 'beforeunload' event tab fire hota hai jab page refresh ya close ho raha ho
+    window.addEventListener("beforeunload", handleRefresh);
+
+    return () => {
+      window.removeEventListener("beforeunload", handleRefresh);
+    };
+  }, [user, logout]);
+
   const isActive = (path) => (location.pathname === path ? "active" : "");
 
+  // ✅ Helper function to close menu on mobile when a link is clicked
+  const closeMenu = () => setMenuOpen(false);
+
   const goDashboard = () => {
+    closeMenu(); // Close menu first
     if (!user) return;
     if (user.role === "SuperAdmin") navigate("/superadmin/dashboard");
     else if (user.role === "CompanyAdmin") navigate("/company/dashboard");
@@ -40,7 +62,7 @@ const Navbar = () => {
     <nav className={`navbar ${scrolled ? "scrolled" : ""}`}>
       <div className="nav-container">
         {/* LOGO */}
-        <Link to="/" className="logo" onClick={() => setMenuOpen(false)}>
+        <Link to="/" className="logo" onClick={closeMenu}>
           <div className="logo-icon">
             <FaShieldAlt />
           </div>
@@ -49,65 +71,131 @@ const Navbar = () => {
           </span>
         </Link>
 
-        {/* DESKTOP MENU */}
+        {/* MENU ITEMS */}
         <ul className={`menu ${menuOpen ? "open" : ""}`}>
-          <li><Link className={isActive("/")} to="/">Home</Link></li>
-          <li><Link className={isActive("/features")} to="/features">Features</Link></li>
-          <li><Link className={isActive("/services")} to="/services">Services</Link></li>
-          <li><Link className={isActive("/about")} to="/about">About</Link></li>
-          <li><Link className={isActive("/contact")} to="/contact">Contact</Link></li>
+          <li>
+            <Link className={isActive("/")} to="/" onClick={closeMenu}>
+              Home
+            </Link>
+          </li>
+          <li>
+            <Link
+              className={isActive("/features")}
+              to="/features"
+              onClick={closeMenu}
+            >
+              Features
+            </Link>
+          </li>
+          <li>
+            <Link
+              className={isActive("/services")}
+              to="/services"
+              onClick={closeMenu}
+            >
+              Services
+            </Link>
+          </li>
+          <li>
+            <Link
+              className={isActive("/about")}
+              to="/about"
+              onClick={closeMenu}
+            >
+              About
+            </Link>
+          </li>
+          <li>
+            <Link
+              className={isActive("/contact")}
+              to="/contact"
+              onClick={closeMenu}
+            >
+              Contact
+            </Link>
+          </li>
+
+          {/* ✅ MOBILE ONLY: Partner Link inside Menu */}
+          <li className="mobile-partner-item">
+            <Link
+              to="/partner-with-us"
+              onClick={closeMenu}
+              className="mobile-partner-link"
+            >
+              <FaHandshake /> Partner With Us
+            </Link>
+          </li>
         </ul>
 
         {/* RIGHT ACTIONS */}
         <div className="actions">
-          <Link to="/partner-with-us" className="partner">
+          {/* ✅ DESKTOP ONLY: Partner Button */}
+          <Link to="/partner-with-us" className="partner-btn desktop-only">
             <FaHandshake /> Partner
           </Link>
 
           {user ? (
             <div className="user-actions">
               <button className="dashboard-btn" onClick={goDashboard}>
-                <FaUserCircle /> Dashboard
+                <FaUserCircle /> <span className="dash-text">Dashboard</span>
               </button>
-              <button className="logout-btn" onClick={logout}>
+              <button
+                className="logout-btn"
+                onClick={() => {
+                  logout();
+                  closeMenu();
+                }}
+                title="Logout"
+              >
                 <FaSignOutAlt />
               </button>
             </div>
           ) : (
             <div className="login-dropdown">
-              <span>Login</span>
-              <div className="dropdown">
-                <Link to="/employee-login"><FaUserCircle /> Employee</Link>
-                <Link to="/admin-login"><FaUserTie /> HR Admin</Link>
-                <Link to="/company-login"><FaBuilding /> Company</Link>
+              <span className="login-trigger">Login</span>
+              <div className="dropdown-content">
+                <Link to="/employee-login" onClick={closeMenu}>
+                  <FaUserCircle /> Employee
+                </Link>
+                <Link to="/admin-login" onClick={closeMenu}>
+                  <FaUserTie /> HR Admin
+                </Link>
+                <Link to="/company-login" onClick={closeMenu}>
+                  <FaBuilding /> Company
+                </Link>
                 <div className="divider" />
-                <Link to="/super-admin-login"><FaUserShield /> Super Admin</Link>
+                <Link to="/super-admin-login" onClick={closeMenu}>
+                  <FaUserShield /> Super Admin
+                </Link>
               </div>
             </div>
           )}
 
+          {/* HAMBURGER TOGGLE */}
           <button className="hamburger" onClick={() => setMenuOpen(!menuOpen)}>
             {menuOpen ? <FaTimes /> : <FaBars />}
           </button>
         </div>
       </div>
 
-      {/* ================= STYLES ================= */}
+      {/* ================= CSS STYLES ================= */}
       <style>{`
+        /* --- 1. BASE NAVBAR STYLES --- */
         .navbar {
           position: fixed;
           top: 0;
           width: 100%;
           height: 80px;
           z-index: 1000;
-          transition: 0.3s ease;
+          transition: all 0.3s ease;
           background: transparent;
         }
 
         .navbar.scrolled {
-          background: rgba(255,255,255,0.92);
+          background: rgba(255, 255, 255, 0.95);
           backdrop-filter: blur(10px);
-          box-shadow: 0 10px 30px rgba(0,0,0,0.06);
+          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+          height: 70px;
         }
 
         .nav-container {
@@ -120,37 +208,41 @@ const Navbar = () => {
           justify-content: space-between;
         }
 
-        /* LOGO */
+        /* --- 2. LOGO --- */
         .logo {
           display: flex;
           align-items: center;
-          gap: 12px;
+          gap: 10px;
           font-weight: 800;
-          font-size: 1.4rem;
+          font-size: 1.5rem;
           text-decoration: none;
-          color: #1e293b;
+          color: #0f172a;
+          letter-spacing: -0.5px;
+          z-index: 1001; /* Ensure logo is above mobile menu */
         }
 
         .logo-icon {
-          background: #1a73e8;
+          background: linear-gradient(135deg, #2563eb, #1d4ed8);
           color: #fff;
-          width: 38px;
-          height: 38px;
+          width: 36px;
+          height: 36px;
           border-radius: 10px;
           display: flex;
           align-items: center;
           justify-content: center;
+          font-size: 1.1rem;
+          box-shadow: 0 4px 10px rgba(37, 99, 235, 0.3);
         }
 
-        .logo span span {
-          color: #1a73e8;
-        }
+        .logo span span { color: #2563eb; }
 
-        /* MENU */
+        /* --- 3. DESKTOP MENU --- */
         .menu {
           display: flex;
           gap: 30px;
           list-style: none;
+          margin: 0;
+          padding: 0;
         }
 
         .menu a {
@@ -158,50 +250,61 @@ const Navbar = () => {
           font-weight: 600;
           color: #64748b;
           transition: 0.2s;
+          font-size: 0.95rem;
+          position: relative;
         }
 
         .menu a:hover,
         .menu a.active {
-          color: #1a73e8;
+          color: #2563eb;
         }
 
-        /* ACTIONS */
+        .mobile-partner-item { display: none; } /* Hidden on desktop */
+
+        /* --- 4. ACTIONS & BUTTONS --- */
         .actions {
           display: flex;
           align-items: center;
-          gap: 14px;
+          gap: 15px;
         }
 
-        .partner {
-          border: 1.5px solid #1a73e8;
-          padding: 8px 16px;
+        /* Partner Button (Desktop) */
+        .partner-btn {
+          border: 1.5px solid #2563eb;
+          padding: 8px 20px;
           border-radius: 50px;
           text-decoration: none;
-          color: #1a73e8;
+          color: #2563eb;
           font-weight: 700;
           display: flex;
           align-items: center;
-          gap: 6px;
+          gap: 8px;
+          transition: 0.2s;
+          font-size: 0.9rem;
+        }
+        .partner-btn:hover {
+          background: #eff6ff;
+          transform: translateY(-1px);
         }
 
-        .user-actions {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-        }
+        /* User Dashboard Buttons */
+        .user-actions { display: flex; align-items: center; gap: 10px; }
 
         .dashboard-btn {
-          background: #eff6ff;
-          color: #1a73e8;
+          background: #0f172a;
+          color: #fff;
           border: none;
-          padding: 10px 16px;
+          padding: 9px 18px;
           border-radius: 12px;
-          font-weight: 700;
+          font-weight: 600;
           cursor: pointer;
           display: flex;
-          gap: 6px;
+          gap: 8px;
           align-items: center;
+          font-size: 0.9rem;
+          transition: 0.2s;
         }
+        .dashboard-btn:hover { background: #1e293b; transform: translateY(-1px); }
 
         .logout-btn {
           background: #fee2e2;
@@ -211,25 +314,36 @@ const Navbar = () => {
           height: 40px;
           border-radius: 12px;
           cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: 0.2s;
         }
+        .logout-btn:hover { background: #fecaca; }
 
-        /* LOGIN DROPDOWN */
+        /* --- 5. LOGIN DROPDOWN --- */
         .login-dropdown {
           position: relative;
+          z-index: 1002;
+        }
+
+        .login-trigger {
+          background: #2563eb;
+          color: #fff;
+          padding: 9px 24px;
+          border-radius: 50px;
           font-weight: 700;
           cursor: pointer;
+          font-size: 0.9rem;
+          box-shadow: 0 4px 10px rgba(37, 99, 235, 0.25);
+          transition: 0.2s;
+          display: inline-block;
         }
+        .login-trigger:hover { background: #1d4ed8; transform: translateY(-1px); }
 
-        .login-dropdown span {
-          background: #0f172a;
-          color: #fff;
-          padding: 10px 18px;
-          border-radius: 12px;
-        }
-
-        .dropdown {
+        .dropdown-content {
           position: absolute;
-          top: 55px;
+          top: 140%; /* Spacing from button */
           right: 0;
           background: #fff;
           min-width: 220px;
@@ -238,75 +352,100 @@ const Navbar = () => {
           opacity: 0;
           visibility: hidden;
           transform: translateY(10px);
-          transition: 0.25s;
+          transition: all 0.2s ease-in-out;
           padding: 8px;
+          border: 1px solid #f1f5f9;
         }
 
-        .login-dropdown:hover .dropdown {
+        /* Show dropdown on hover */
+        .login-dropdown:hover .dropdown-content {
           opacity: 1;
           visibility: visible;
           transform: translateY(0);
         }
 
-        .dropdown a {
+        .dropdown-content a {
           display: flex;
           gap: 10px;
           align-items: center;
-          padding: 12px;
+          padding: 12px 15px;
           font-weight: 600;
           text-decoration: none;
           color: #475569;
           border-radius: 10px;
+          font-size: 0.9rem;
+          transition: 0.2s;
         }
 
-        .dropdown a:hover {
-          background: #f1f5f9;
-          color: #1a73e8;
+        .dropdown-content a:hover {
+          background: #f8fafc;
+          color: #2563eb;
         }
 
         .divider {
           height: 1px;
-          background: #e5e7eb;
+          background: #e2e8f0;
           margin: 6px 0;
         }
 
-        /* HAMBURGER */
+        /* --- 6. HAMBURGER ICON --- */
         .hamburger {
           display: none;
           font-size: 1.6rem;
           background: none;
           border: none;
           cursor: pointer;
+          color: #1e293b;
+          z-index: 1002;
         }
 
-        /* MOBILE */
+        /* ================= MOBILE RESPONSIVE STYLES ================= */
         @media (max-width: 1024px) {
+          .hamburger { display: block; }
+          .desktop-only { display: none !important; } /* Hide Desktop Partner Btn */
+          
+          .mobile-partner-item { display: block; margin-top: 15px; } /* Show in menu */
+          .mobile-partner-link {
+             background: #eff6ff;
+             color: #2563eb !important;
+             padding: 12px 20px !important;
+             border-radius: 12px;
+             display: flex;
+             align-items: center;
+             justify-content: center;
+             gap: 8px;
+             text-align: center;
+          }
+
           .menu {
             position: fixed;
-            top: 80px;
+            top: 0;
             right: 0;
-            background: #fff;
-            width: 260px;
-            height: calc(100vh - 80px);
+            background: #ffffff;
+            width: 280px;
+            height: 100vh;
             flex-direction: column;
-            padding: 40px 30px;
-            gap: 25px;
+            padding: 100px 30px 40px; /* Top padding clears logo area */
+            gap: 20px;
             transform: translateX(100%);
-            transition: 0.3s;
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             box-shadow: -10px 0 30px rgba(0,0,0,0.05);
+            z-index: 999; /* Below Hamburger/Logo */
           }
 
           .menu.open {
             transform: translateX(0);
           }
 
-          .hamburger {
+          .menu a {
+            font-size: 1.1rem;
             display: block;
+            border-bottom: 1px solid #f1f5f9;
+            padding-bottom: 10px;
           }
-
-          .partner {
-            display: none;
-          }
+          
+          .dash-text { display: none; } /* Hide text on small mobile, show icon only */
+          .dashboard-btn { padding: 10px; }
         }
       `}</style>
     </nav>
