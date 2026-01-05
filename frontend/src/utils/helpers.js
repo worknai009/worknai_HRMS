@@ -17,7 +17,7 @@ export const getImageUrl = (path) => {
 
   // 4. Dynamic API URL Selection
   // SaaS best practice: Localhost ki jagah base URL context se lein
-  const BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:5000";
+  const BASE_URL = process.env.REACT_APP_API_URL || window.location.origin;
 
   // Final path return karein bina kisi double slash ki galti ke
   return `${BASE_URL}/${normalizedPath}`;
