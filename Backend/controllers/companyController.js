@@ -87,11 +87,9 @@ const registerHR = async (req, res) => {
     const currentHRs = await User.countDocuments({ companyId, role: "Admin" });
 
     if (company.maxHrAdmins && currentHRs >= company.maxHrAdmins) {
-      return res
-        .status(400)
-        .json({
-          message: `HR Limit Reached (${company.maxHrAdmins}). Request upgrade from Dashboard.`,
-        });
+      return res.status(400).json({
+        message: `HR Limit Reached (${company.maxHrAdmins}). Request upgrade from Dashboard.`,
+      });
     }
 
     const existing = await User.findOne({ email });

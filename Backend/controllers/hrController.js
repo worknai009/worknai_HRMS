@@ -35,8 +35,6 @@ const getAllEmployees = async (req, res) => {
 const updateEmployeeDetails = async (req, res) => {
   try {
     const updates = req.body || {};
-
-    // Prevent accidental status change via simple update (use approve endpoint instead)
     delete updates.status;
     delete updates.isApproved;
 
@@ -47,12 +45,11 @@ const updateEmployeeDetails = async (req, res) => {
     if (!user) return res.status(404).json({ message: "User not found" });
     res.json({ message: "Employee updated successfully", user });
   } catch (err) {
-    console.error("Update Employee Error:", err);
     res.status(500).json({ message: "Update failed" });
   }
 };
 
-// ✅ APPROVE EMPLOYEE (Sets Salary & Joining Date)
+// Approve Employee
 const approveEmployee = async (req, res) => {
   try {
     const { userId, basicSalary, joiningDate } = req.body;
@@ -60,9 +57,7 @@ const approveEmployee = async (req, res) => {
     if (!basicSalary || !joiningDate) {
       return res
         .status(400)
-        .json({
-          message: "Joining Date and Basic Salary are required for approval.",
-        });
+        .json({ message: "Joining Date and Basic Salary are required." });
     }
 
     const user = await User.findByIdAndUpdate(
@@ -81,12 +76,11 @@ const approveEmployee = async (req, res) => {
     if (!user) return res.status(404).json({ message: "User not found" });
     res.json({ message: "Employee Approved & Active 🚀" });
   } catch (err) {
-    console.error("Approve Employee Error:", err);
     res.status(500).json({ message: "Approval failed" });
   }
 };
 
-// ✅ DELETE EMPLOYEE + JOURNEY REPORT (PDF)
+// Delete Employee
 const deleteEmployee = async (req, res) => {
   try {
     const user = await User.findById(req.params.userId);
@@ -109,63 +103,73 @@ const deleteEmployee = async (req, res) => {
     );
 
     doc.pipe(res);
-
-    // PDF Header
     doc.fontSize(20).text("EMPLOYEE JOURNEY REPORT", { align: "center" });
     doc.moveDown();
-
-    // Profile
     doc.fontSize(12).text(`Name: ${user.name}`);
-    doc.text(`Email: ${user.email}`);
     doc.text(`Designation: ${user.designation}`);
     doc.text(`Status: ${user.status}`);
-    doc.text(
-      `Joined: ${
-        user.joiningDate ? new Date(user.joiningDate).toDateString() : "N/A"
-      }`
-    );
     doc.moveDown();
-
-    // Stats
-    doc.fontSize(14).text("Performance Stats", { underline: true });
-    doc.fontSize(12).text(`Total Working Days: ${attendanceCount}`);
+    doc.text(`Total Working Days: ${attendanceCount}`);
     doc.text(`Total Leaves Applied: ${leaveCount}`);
-
     doc.end();
 
-    // Hard Delete after PDF generation
     res.on("finish", async () => {
       await User.deleteOne({ _id: user._id });
       await Attendance.deleteMany({ userId: user._id });
       await Leave.deleteMany({ userId: user._id });
     });
   } catch (err) {
-    console.error("Delete Employee Error:", err);
     if (!res.headersSent) res.status(500).json({ message: "Delete failed" });
   }
 };
 
-/* ================= 2. ATTENDANCE & PAYROLL ================= */
+/* ================= 2. ATTENDANCE & PAYROLL (UPDATED) ================= */
 
-// Manual Attendance (HR Override)
+// ✅ MANUAL ATTENDANCE (UPDATED: Handles Time & Status)
 const addManualAttendance = async (req, res) => {
   try {
-    const { userId, date, status, remarks } = req.body;
+    const { userId, date, status, remarks, inTime, outTime } = req.body;
     if (!userId || !date)
       return res.status(400).json({ message: "userId & date required" });
 
-    // Check if record exists
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ message: "Employee not found" });
+
+    // Calculate Times
+    // If In/Out time provided by HR, use it. Otherwise default to 9 AM - 6 PM
+    let punchIn = inTime
+      ? new Date(`${date}T${inTime}:00`)
+      : new Date(`${date}T09:00:00`);
+    let punchOut = outTime
+      ? new Date(`${date}T${outTime}:00`)
+      : new Date(`${date}T18:00:00`);
+
+    // Calculate Net Hours based on Time
+    let netWorkHours = "0.00";
+    if (status === "Present" || status === "HalfDay") {
+      const diffMs = punchOut - punchIn;
+      if (diffMs > 0) {
+        netWorkHours = (diffMs / 36e5).toFixed(2); // Convert ms to hours
+      }
+    }
+
+    // Check if record exists for that date
     const exists = await Attendance.findOne({ userId, date });
+
     if (exists) {
-      // Allow updating existing record
       exists.status = status;
       exists.remarks = remarks || exists.remarks;
+      exists.punchInTime = punchIn;
+      exists.punchOutTime = punchOut;
+      exists.netWorkHours = netWorkHours;
+      exists.isManualEntry = true;
+
+      // If updating to Holiday, change mode
+      if (status === "Holiday") exists.mode = "Holiday";
+
       await exists.save();
       return res.json({ message: "Attendance Updated", data: exists });
     }
-
-    const user = await User.findById(userId);
-    if (!user) return res.status(404).json({ message: "Employee not found" });
 
     const record = await Attendance.create({
       userId,
@@ -175,9 +179,10 @@ const addManualAttendance = async (req, res) => {
       remarks: remarks || "Manual entry by HR",
       isManualEntry: true,
       addedBy: getReqUserId(req),
-      netWorkHours: status === "Present" ? "8.00" : "0.00",
-      punchInTime: new Date(`${date}T09:00:00`),
-      punchOutTime: new Date(`${date}T18:00:00`),
+      netWorkHours,
+      punchInTime: punchIn,
+      punchOutTime: punchOut,
+      mode: status === "Holiday" ? "Holiday" : "Manual",
     });
 
     res.status(201).json({ message: "Manual Attendance Added", data: record });
@@ -210,20 +215,47 @@ const markHoliday = async (req, res) => {
       companyId: req.user.companyId,
     });
 
-    res.status(201).json({ message: "Holiday marked successfully", holiday });
+    // Optional: Auto-mark attendance for all employees as Holiday
+    const employees = await User.find({
+      companyId: req.user.companyId,
+      role: "Employee",
+      status: "Active",
+    });
+
+    const attendanceOps = employees.map((emp) => ({
+      updateOne: {
+        filter: { userId: emp._id, date: date },
+        update: {
+          $set: {
+            status: "Holiday",
+            mode: "Holiday",
+            remarks: reason,
+            companyId: req.user.companyId,
+            netWorkHours: "0.00",
+          },
+        },
+        upsert: true,
+      },
+    }));
+
+    if (attendanceOps.length > 0) {
+      await Attendance.bulkWrite(attendanceOps);
+    }
+
+    res
+      .status(201)
+      .json({ message: "Holiday marked & Attendance updated", holiday });
   } catch (err) {
     console.error("Mark Holiday Error:", err);
     res.status(500).json({ message: "Failed to mark holiday" });
   }
 };
 
-// Get Employee History (Kundali View)
+// Get History
 const getEmployeeHistory = async (req, res) => {
   try {
     const user = await User.findById(req.params.userId).select("-password");
     if (!user) return res.status(404).json({ message: "User not found" });
-
-    // Sort by date descending (Newest first)
     const history = await Attendance.find({ userId: user._id }).sort({
       date: -1,
     });
@@ -233,7 +265,7 @@ const getEmployeeHistory = async (req, res) => {
   }
 };
 
-// ✅ PAYROLL CALCULATION ENGINE (UPDATED Logic)
+// ✅ PAYROLL CALCULATION ENGINE (FIXED: Leave Counting)
 const getPayrollStats = async (req, res) => {
   try {
     const user = await User.findById(req.params.userId);
@@ -250,66 +282,62 @@ const getPayrollStats = async (req, res) => {
     const sStr = start.toISOString().split("T")[0];
     const eStr = end.toISOString().split("T")[0];
 
-    // 1. Fetch Attendance (Includes WFH marked as Present/HalfDay)
+    // Fetch Data
     const attendance = await Attendance.find({
       userId: user._id,
       date: { $gte: sStr, $lte: eStr },
     });
-
-    // 2. Fetch Holidays
     const holidays = await Holiday.find({
       companyId: user.companyId,
       date: { $gte: sStr, $lte: eStr },
     });
 
-    // 3. Fetch Approved Paid Leaves
-    // Only fetch leaves that fall within the range and are PAID
-    const leaves = await Leave.find({
-      userId: user._id,
-      status: "Approved",
-      startDate: { $gte: start },
-      // Note: Ideally filter leaves overlapping the range properly
-    });
+    // ✅ Fix: Get ALL approved leaves, then filter in loop to match range
+    const leaves = await Leave.find({ userId: user._id, status: "Approved" });
 
-    // --- LOGIC ---
     let presentDays = 0;
     let halfDays = 0;
-    let wfhDays = 0;
+    let holidayCount = 0;
 
     attendance.forEach((a) => {
-      // Skip if before joining
-      if (user.joiningDate && new Date(a.date) < new Date(user.joiningDate))
-        return;
-
-      if (a.mode === "WFH") wfhDays++; // Track for stats
-
-      if (a.status === "HalfDay") halfDays++;
+      if (a.mode === "Holiday" || a.status === "Holiday") holidayCount++;
+      else if (a.status === "HalfDay") halfDays++;
       else if (["Present", "Completed", "Punched Out"].includes(a.status))
         presentDays++;
     });
 
-    // Count Paid Leaves
+    // Check holidays (avoid double count)
+    holidays.forEach((h) => {
+      const isRecorded = attendance.find((a) => a.date === h.date);
+      if (!isRecorded) holidayCount++;
+    });
+
     let paidLeaveDays = 0;
     let unpaidLeaveDays = 0;
 
+    // ✅ Logic to count only leaves falling inside selected date range
     leaves.forEach((l) => {
-      // Logic: If leaveType is Paid/Sick/Casual -> It's Paid
-      if (["Paid", "Sick", "Casual"].includes(l.leaveType)) {
-        paidLeaveDays += l.dayType === "Half Day" ? 0.5 : l.daysCount || 1;
-      } else if (l.leaveType === "Unpaid") {
-        unpaidLeaveDays += l.dayType === "Half Day" ? 0.5 : l.daysCount || 1;
+      const leaveStart = new Date(l.startDate);
+      const leaveEnd = new Date(l.endDate);
+      const payStart = new Date(sStr);
+      const payEnd = new Date(eStr);
+
+      // Check for overlap
+      if (leaveStart <= payEnd && leaveEnd >= payStart) {
+        // Determine duration
+        const days = l.daysCount || 1; // Default to 1 if missing
+        const val = l.dayType === "Half Day" ? 0.5 : days;
+
+        if (["Paid", "Sick", "Casual"].includes(l.leaveType)) {
+          paidLeaveDays += val;
+        } else if (l.leaveType === "Unpaid") {
+          unpaidLeaveDays += val;
+        }
       }
-      // Note: WFH requests are tracked via Attendance (mode='WFH') once approved
     });
 
-    const holidayCount = holidays.length;
-
-    // TOTAL PAYABLE DAYS FORMULA
-    // Present (Inc WFH) + Holidays + Paid Leaves + (Half Days * 0.5)
     const totalPayableDays =
       presentDays + holidayCount + paidLeaveDays + halfDays * 0.5;
-
-    // Salary Calc
     const daysInMonth = getDaysInMonth(
       start.getFullYear(),
       start.getMonth() + 1
@@ -325,7 +353,6 @@ const getPayrollStats = async (req, res) => {
       holidayCount,
       paidLeaveDays,
       unpaidLeaveDays,
-      wfhDays,
       estimatedSalary,
       breakdown: `Present(${presentDays}) + Holidays(${holidayCount}) + PaidLeaves(${paidLeaveDays}) + HalfDays(${
         halfDays * 0.5
@@ -337,34 +364,22 @@ const getPayrollStats = async (req, res) => {
   }
 };
 
-// Generate Salary Slip (PDF)
+// Generate Salary Slip
 const generateSalarySlip = async (req, res) => {
   try {
     const { userId } = req.params;
-    const { startDate, endDate } = req.query;
-
     const user = await User.findById(userId);
     if (!user) return res.status(404).json({ message: "Employee not found" });
 
     const doc = new PDFDocument({ margin: 50 });
     res.setHeader("Content-Type", "application/pdf");
-    res.setHeader(
-      "Content-Disposition",
-      `attachment; filename=SalarySlip_${user.name.replace(/\s+/g, "_")}.pdf`
-    );
+    res.setHeader("Content-Disposition", `attachment; filename=SalarySlip.pdf`);
     doc.pipe(res);
 
     doc.fontSize(20).text("SALARY SLIP", { align: "center", underline: true });
     doc.moveDown();
     doc.fontSize(12).text(`Employee: ${user.name}`);
-    doc.text(`ID: ${user._id}`);
-    doc.text(`Date: ${new Date().toLocaleDateString()}`);
-    doc.moveDown();
     doc.text(`Basic Salary: Rs. ${user.basicSalary || 0}`);
-    doc.moveDown();
-    doc
-      .fontSize(10)
-      .text("* This is a computer-generated document.", { align: "center" });
     doc.end();
   } catch (error) {
     res.status(500).json({ message: "PDF Generation Failed" });
@@ -375,15 +390,12 @@ const generateSalarySlip = async (req, res) => {
 const manageWfhRequest = async (req, res) => {
   try {
     const { userId, action, wfhType, date } = req.body;
-
     if (action === "Approve") {
       const day = date || new Date().toISOString().split("T")[0];
       const exists = await Attendance.findOne({ userId, date: day });
 
       if (exists)
-        return res
-          .status(400)
-          .json({ message: "Attendance already exists for this date" });
+        return res.status(400).json({ message: "Attendance already exists" });
 
       await Attendance.create({
         userId,
@@ -396,12 +408,10 @@ const manageWfhRequest = async (req, res) => {
         netWorkHours: wfhType === "HalfDay" ? "4.00" : "8.00",
         remarks: "WFH Approved by HR",
       });
-
-      return res.json({ message: "WFH Approved & Attendance Marked ✅" });
+      return res.json({ message: "WFH Approved & Marked ✅" });
     }
     res.json({ message: "Request Updated" });
   } catch (err) {
-    console.error("WFH Error:", err);
     res.status(500).json({ message: "Server Error" });
   }
 };

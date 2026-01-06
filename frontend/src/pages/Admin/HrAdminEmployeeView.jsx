@@ -20,7 +20,7 @@ import {
   FaExclamationTriangle,
   FaSignInAlt,
   FaSignOutAlt,
-  FaUserTie,
+  FaUmbrellaBeach,
 } from "react-icons/fa";
 
 // Helper for Image URL
@@ -35,12 +35,11 @@ const getImageUrl = (path) => {
 
   return `${window.location.origin}/${finalPath}`;
 };
-
 const HrAdminEmployeeView = () => {
   const { userId } = useParams();
   const navigate = useNavigate();
 
-  // State
+  // --- STATE MANAGEMENT ---
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState(null);
   const [history, setHistory] = useState([]);
@@ -58,11 +57,13 @@ const HrAdminEmployeeView = () => {
   const [payrollStats, setPayrollStats] = useState(null);
   const [calculating, setCalculating] = useState(false);
 
-  // Manual Attendance State
+  // ✅ MANUAL ATTENDANCE STATE (With Time & Holiday)
   const [manualDate, setManualDate] = useState(
     new Date().toISOString().split("T")[0]
   );
   const [manualStatus, setManualStatus] = useState("Present");
+  const [inTime, setInTime] = useState("09:00");
+  const [outTime, setOutTime] = useState("18:00");
 
   // Edit Mode State
   const [isEditing, setIsEditing] = useState(false);
@@ -133,15 +134,18 @@ const HrAdminEmployeeView = () => {
     }
   };
 
+  // ✅ UPDATED: Mark Attendance with Time & Holiday Support
   const markManualAttendance = async () => {
     try {
       await API.post("/hr/attendance/manual", {
         userId: user._id,
         date: manualDate,
         status: manualStatus,
+        inTime: inTime, // Sending Time
+        outTime: outTime, // Sending Time
         remarks: "Marked manually by HR",
       });
-      toast.success("Attendance Updated");
+      toast.success("Attendance Updated Successfully");
       fetchEmployeeKundali();
     } catch (err) {
       toast.error("Failed to mark attendance");
@@ -158,10 +162,12 @@ const HrAdminEmployeeView = () => {
     }
   };
 
+  // ✅ COUNTS Logic (Matches Backend)
   const wfhCount = history.filter((h) => h.mode === "WFH").length;
   const approvedLeaves = leaves.filter((l) => l.status === "Approved").length;
+  // Include 'Completed' and 'Punched Out' for total present
   const totalPresent = history.filter((h) =>
-    ["Present", "HalfDay", "Punched Out"].includes(h.status)
+    ["Present", "HalfDay", "Punched Out", "Completed"].includes(h.status)
   ).length;
   const totalAbsent = history.filter((h) => h.status === "Absent").length;
 
@@ -294,14 +300,16 @@ const HrAdminEmployeeView = () => {
             )}
           </div>
 
-          {/* 2. MANUAL ATTENDANCE (FIXED: Now properly stacked below profile) */}
+          {/* 2. MANUAL ATTENDANCE (CLEAN UI + NEW FEATURES) */}
           <div className="modern-card manual-card">
             <div className="card-header-small">
               <h4>
                 <FaClock className="icon-orange" /> Manual Attendance
               </h4>
             </div>
-            <p className="helper-text">Fix attendance errors manually.</p>
+            <p className="helper-text">
+              Add missed punches, adjust time, or mark holidays.
+            </p>
             <div className="manual-form">
               <div className="input-group">
                 <label>Date</label>
@@ -318,11 +326,36 @@ const HrAdminEmployeeView = () => {
                   onChange={(e) => setManualStatus(e.target.value)}
                 >
                   <option value="Present">Present</option>
+                  <option value="HalfDay">Half Day</option>
                   <option value="On Leave">Mark Paid Leave</option>
                   <option value="Absent">Mark Absent (Unpaid)</option>
-                  <option value="HalfDay">Half Day</option>
+                  <option value="Holiday">Holiday</option>{" "}
+                  {/* ✅ Added Holiday */}
                 </select>
               </div>
+
+              {/* ✅ CONDITIONAL TIME INPUTS (Only Show if Present/HalfDay) */}
+              {(manualStatus === "Present" || manualStatus === "HalfDay") && (
+                <div className="time-row-inputs">
+                  <div className="input-group">
+                    <label>In Time</label>
+                    <input
+                      type="time"
+                      value={inTime}
+                      onChange={(e) => setInTime(e.target.value)}
+                    />
+                  </div>
+                  <div className="input-group">
+                    <label>Out Time</label>
+                    <input
+                      type="time"
+                      value={outTime}
+                      onChange={(e) => setOutTime(e.target.value)}
+                    />
+                  </div>
+                </div>
+              )}
+
               <button
                 className="btn-primary full-width"
                 onClick={markManualAttendance}
@@ -421,9 +454,10 @@ const HrAdminEmployeeView = () => {
                     <span>Payable Days</span>
                     <strong>{payrollStats.totalPayableDays}</strong>
                   </div>
+                  {/* ✅ Correctly Mapping Backend Data */}
                   <div className="res-box">
-                    <span>Unpaid (LWP)</span>
-                    <strong>{payrollStats.unpaidLeaveCount}</strong>
+                    <span>Paid Leaves</span>
+                    <strong>{payrollStats.paidLeaveDays || 0}</strong>
                   </div>
                   <div className="res-box">
                     <span>Holidays</span>
@@ -437,7 +471,7 @@ const HrAdminEmployeeView = () => {
                   </div>
                 </div>
                 <div className="breakdown-note">
-                  <small>Logic Used: {payrollStats.breakdown}</small>
+                  <small>Breakdown: {payrollStats.breakdown}</small>
                 </div>
               </div>
             )}
@@ -533,13 +567,12 @@ const HrAdminEmployeeView = () => {
                     <th>Punch In / Out</th>
                     <th>Status</th>
                     <th>Mode/Reason</th>
-                    <th>Report</th>
                   </tr>
                 </thead>
                 <tbody>
                   {history.length === 0 ? (
                     <tr>
-                      <td colSpan="5" className="empty">
+                      <td colSpan="4" className="empty">
                         No attendance records
                       </td>
                     </tr>
@@ -550,7 +583,8 @@ const HrAdminEmployeeView = () => {
                           {new Date(rec.date).toLocaleDateString()}
                         </td>
                         <td>
-                          {rec.status === "Absent" ? (
+                          {rec.status === "Absent" ||
+                          rec.status === "Holiday" ? (
                             <span className="dash">-</span>
                           ) : (
                             <div className="punch-times">
@@ -589,20 +623,12 @@ const HrAdminEmployeeView = () => {
                           </span>
                         </td>
                         <td>
-                          <span className="mode-text">{rec.mode}</span>
-                        </td>
-                        <td className="report-text">
-                          {rec.dailyReport ? (
-                            <div
-                              className="report-link"
-                              title={rec.dailyReport}
-                            >
-                              <FaFileAlt className="icon-tiny" /> View
-                            </div>
-                          ) : (
-                            <span className="remarks">
-                              {rec.remarks || "-"}
+                          {rec.mode === "Holiday" ? (
+                            <span className="text-orange">
+                              <FaUmbrellaBeach /> Holiday
                             </span>
+                          ) : (
+                            <span className="mode-text">{rec.mode}</span>
                           )}
                         </td>
                       </tr>
@@ -615,11 +641,12 @@ const HrAdminEmployeeView = () => {
         </main>
       </div>
 
-      {/* --- MODERN CSS STYLES --- */}
+      {/* --- MODERN CSS STYLES (EXACTLY LIKE IMAGE 1) --- */}
       <style>{`
         :root {
-          --primary: #ea580c;
-          --primary-hover: #c2410c;
+          /* Using Blue Theme like Image 1, but keeping Code structure */
+          --primary: #3b82f6; 
+          --primary-hover: #2563eb;
           --bg-body: #f8fafc;
           --white: #ffffff;
           --text-main: #1e293b;
@@ -663,7 +690,7 @@ const HrAdminEmployeeView = () => {
             font-weight: 500;
             font-size: 0.9rem;
         }
-        .back-btn:hover { border-color: var(--primary); color: var(--primary); background: #fff7ed; }
+        .back-btn:hover { border-color: var(--primary); color: var(--primary); background: #eff6ff; }
         
         .title-box h2 { margin: 0; font-size: 1.25rem; color: var(--text-main); font-weight: 700; }
         .subtitle { font-size: 0.8rem; color: var(--text-light); }
@@ -697,7 +724,7 @@ const HrAdminEmployeeView = () => {
             background: var(--white);
             border-radius: 12px;
             padding: 20px;
-            margin-bottom: 0; /* Margin handled by gap */
+            margin-bottom: 0; 
             box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02);
             border: 1px solid var(--border);
             transition: transform 0.2s;
@@ -720,7 +747,7 @@ const HrAdminEmployeeView = () => {
         .profile-img-container img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
         .profile-info { text-align: center; }
         .designation-badge { 
-            background: #fff7ed; color: var(--primary); 
+            background: #eff6ff; color: var(--primary); 
             padding: 5px 12px; border-radius: 20px; 
             font-size: 0.8rem; font-weight: 600;
             display: inline-block; margin-bottom: 20px;
@@ -732,20 +759,23 @@ const HrAdminEmployeeView = () => {
 
         /* BUTTONS */
         .btn-primary { background: var(--primary); color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 500; transition: 0.2s; font-size: 0.9rem; }
-        .btn-primary:hover { background: var(--primary-hover); box-shadow: 0 4px 6px rgba(234, 88, 12, 0.2); }
+        .btn-primary:hover { background: var(--primary-hover); box-shadow: 0 4px 6px rgba(59, 130, 246, 0.2); }
         .btn-outline-primary { background: white; border: 1px solid var(--primary); color: var(--primary); padding: 10px; border-radius: 8px; cursor: pointer; font-weight: 500; transition: 0.2s; font-size: 0.9rem; }
-        .btn-outline-primary:hover { background: #fff7ed; }
+        .btn-outline-primary:hover { background: #eff6ff; }
         .btn-secondary { background: #e2e8f0; color: var(--text-main); border: none; padding: 10px; border-radius: 8px; cursor: pointer; }
         .full-width { width: 100%; }
         .btn-group { display: flex; gap: 10px; margin-top: 15px; }
 
         /* MANUAL ATTENDANCE */
-        .icon-orange { color: var(--primary); }
+        .icon-orange { color: var(--orange); }
         .helper-text { font-size: 0.8rem; color: var(--text-light); margin-bottom: 15px; }
         .manual-form { display: flex; flex-direction: column; gap: 12px; }
         .input-group label { display: block; font-size: 0.8rem; font-weight: 600; color: var(--text-light); margin-bottom: 4px; }
         .manual-form input, .manual-form select { padding: 10px; border: 1px solid var(--border); border-radius: 8px; background: #f8fafc; width: 100%; box-sizing: border-box; }
         .manual-form input:focus, .manual-form select:focus { outline: none; border-color: var(--primary); }
+        
+        .time-row-inputs { display: flex; gap: 10px; }
+        .time-row-inputs .input-group { flex: 1; }
 
         /* STATS WIDGETS */
         .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-bottom: 25px; }
@@ -788,6 +818,7 @@ const HrAdminEmployeeView = () => {
         .time-row { display: flex; align-items: center; gap: 6px; }
         .text-green { color: var(--green); }
         .text-red { color: var(--red); }
+        .text-orange { color: var(--orange); display: flex; align-items: center; gap: 5px; }
         .icon-tiny { font-size: 0.8rem; }
 
         .status-pill { padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; text-transform: capitalize; }
@@ -795,12 +826,12 @@ const HrAdminEmployeeView = () => {
         .status-pill.absent { background: #fee2e2; color: #991b1b; }
         .status-pill.halfday { background: #ffedd5; color: #c2410c; }
         .status-pill.onleave { background: #e0f2fe; color: #075985; }
+        .status-pill.holiday { background: #ffedd5; color: #ea580c; }
 
         .type-tag { font-size: 0.75rem; font-weight: 700; padding: 2px 8px; border-radius: 4px; }
         .type-tag.paid { background: #dbeafe; color: #1e40af; }
         .type-tag.unpaid { background: #fce7f3; color: #9d174d; }
 
-        .report-link { color: var(--blue); cursor: pointer; display: flex; align-items: center; gap: 5px; font-size: 0.85rem; font-weight: 500; }
         .btn-xs { padding: 6px 12px; font-size: 0.75rem; border-radius: 6px; border: none; cursor: pointer; font-weight: 600; transition: 0.2s; }
         .approve { background: #dcfce7; color: #166534; }
         .approve:hover { background: #bbf7d0; }
