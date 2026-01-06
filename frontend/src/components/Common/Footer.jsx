@@ -1,5 +1,5 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
+import React from "react";
+import { Link } from "react-router-dom";
 import {
   FaShieldAlt,
   FaLinkedin,
@@ -9,34 +9,38 @@ import {
   FaEnvelope,
   FaPhoneAlt,
   FaMapMarkerAlt,
-  FaArrowUp
-} from 'react-icons/fa';
+  FaArrowUp,
+} from "react-icons/fa";
 
 const Footer = () => {
-  const scrollToTop = () => window.scrollTo({ top: 0, behavior: 'smooth' });
+  const scrollToTop = () => window.scrollTo({ top: 0, behavior: "smooth" });
 
   return (
     <footer className="main-footer">
       <div className="footer-container">
-
         {/* BRAND */}
         <div className="footer-brand">
           <div className="brand-logo">
             <FaShieldAlt />
-            <span>SMART<span>HRMS</span></span>
+            <span>
+              SMART<span>HRMS</span>
+            </span>
           </div>
 
           <p className="brand-desc">
-            AI-powered biometric HRMS platform designed for
-            secure attendance, workforce automation, and
-            payroll excellence across modern enterprises.
+            AI-powered biometric HRMS platform designed for secure attendance,
+            workforce automation, and payroll excellence across modern
+            enterprises.
           </p>
 
           <div className="social-links">
-            <a href="#"><FaLinkedin /></a>
-            <a href="#"><FaTwitter /></a>
-            <a href="#"><FaFacebook /></a>
-            <a href="#"><FaInstagram /></a>
+            <a href="https://www.linkedin.com/company/worknai-technologies-india-pvt-ltd-pune/">
+              <FaLinkedin />
+            </a>
+
+            <a href="https://www.instagram.com/worknai_institute_center?igsh=MW5zOXZwY3o3anVjNw==">
+              <FaInstagram />
+            </a>
           </div>
         </div>
 
@@ -60,16 +64,26 @@ const Footer = () => {
         {/* CONTACT */}
         <div className="footer-contact">
           <h4>Corporate Office</h4>
-          <p><FaMapMarkerAlt /> Digital Park, Maharashtra, India</p>
-          <p><FaPhoneAlt /> +91 98765 43210</p>
-          <p><FaEnvelope /> skhandagle1233@gmail.com</p>
+          <p>
+            <FaMapMarkerAlt />
+            WorknAi Technologie India Pvt Ltd Office No. 312, Sai
+            Millennium,Punawale, Pune 411062
+          </p>
+          <p>
+            <FaPhoneAlt /> +91 9923400442
+          </p>
+          <p>
+            <FaEnvelope /> worknai009@gmail.com
+          </p>
         </div>
       </div>
 
       {/* BOTTOM */}
       <div className="footer-bottom">
         <p>© 2025 SmartHRMS SaaS India. All rights reserved.</p>
-        <button onClick={scrollToTop}><FaArrowUp /></button>
+        <button onClick={scrollToTop}>
+          <FaArrowUp />
+        </button>
       </div>
 
       {/* STYLES */}
