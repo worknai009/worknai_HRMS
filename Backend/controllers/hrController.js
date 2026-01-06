@@ -125,7 +125,7 @@ const deleteEmployee = async (req, res) => {
 
 /* ================= 2. ATTENDANCE & PAYROLL (UPDATED) ================= */
 
-// ✅ MANUAL ATTENDANCE (UPDATED: Handles Time & Status)
+// ✅ MANUAL ATTENDANCE (FIXED TIMEZONE ISSUE)
 const addManualAttendance = async (req, res) => {
   try {
     const { userId, date, status, remarks, inTime, outTime } = req.body;
@@ -135,25 +135,32 @@ const addManualAttendance = async (req, res) => {
     const user = await User.findById(userId);
     if (!user) return res.status(404).json({ message: "Employee not found" });
 
-    // Calculate Times
-    // If In/Out time provided by HR, use it. Otherwise default to 9 AM - 6 PM
-    let punchIn = inTime
-      ? new Date(`${date}T${inTime}:00`)
-      : new Date(`${date}T09:00:00`);
-    let punchOut = outTime
-      ? new Date(`${date}T${outTime}:00`)
-      : new Date(`${date}T18:00:00`);
+    // ✅ FIX: Construct Date objects explicitly to prevent UTC shift
+    // Input format: date="YYYY-MM-DD", inTime="HH:MM"
+    const createDateWithTime = (dateStr, timeStr) => {
+      if (!timeStr) return null;
+      const [year, month, day] = dateStr.split("-").map(Number);
+      const [hours, minutes] = timeStr.split(":").map(Number);
+      // Create date in local server time (or treat as UTC if preferred, but consistency matters)
+      return new Date(year, month - 1, day, hours, minutes, 0);
+    };
 
-    // Calculate Net Hours based on Time
+    let punchIn = inTime
+      ? createDateWithTime(date, inTime)
+      : createDateWithTime(date, "09:00");
+    let punchOut = outTime
+      ? createDateWithTime(date, outTime)
+      : createDateWithTime(date, "18:00");
+
+    // Calculate Net Hours
     let netWorkHours = "0.00";
-    if (status === "Present" || status === "HalfDay") {
-      const diffMs = punchOut - punchIn;
+    if ((status === "Present" || status === "HalfDay") && punchIn && punchOut) {
+      const diffMs = punchOut.getTime() - punchIn.getTime();
       if (diffMs > 0) {
-        netWorkHours = (diffMs / 36e5).toFixed(2); // Convert ms to hours
+        netWorkHours = (diffMs / 36e5).toFixed(2);
       }
     }
 
-    // Check if record exists for that date
     const exists = await Attendance.findOne({ userId, date });
 
     if (exists) {
@@ -164,8 +171,12 @@ const addManualAttendance = async (req, res) => {
       exists.netWorkHours = netWorkHours;
       exists.isManualEntry = true;
 
-      // If updating to Holiday, change mode
-      if (status === "Holiday") exists.mode = "Holiday";
+      if (status === "Holiday") {
+        exists.mode = "Holiday";
+        exists.netWorkHours = "0.00";
+      } else {
+        exists.mode = "Manual";
+      }
 
       await exists.save();
       return res.json({ message: "Attendance Updated", data: exists });
@@ -215,7 +226,6 @@ const markHoliday = async (req, res) => {
       companyId: req.user.companyId,
     });
 
-    // Optional: Auto-mark attendance for all employees as Holiday
     const employees = await User.find({
       companyId: req.user.companyId,
       role: "Employee",
@@ -265,7 +275,7 @@ const getEmployeeHistory = async (req, res) => {
   }
 };
 
-// ✅ PAYROLL CALCULATION ENGINE (FIXED: Leave Counting)
+// ✅ PAYROLL CALCULATION ENGINE
 const getPayrollStats = async (req, res) => {
   try {
     const user = await User.findById(req.params.userId);
@@ -291,8 +301,6 @@ const getPayrollStats = async (req, res) => {
       companyId: user.companyId,
       date: { $gte: sStr, $lte: eStr },
     });
-
-    // ✅ Fix: Get ALL approved leaves, then filter in loop to match range
     const leaves = await Leave.find({ userId: user._id, status: "Approved" });
 
     let presentDays = 0;
@@ -306,7 +314,6 @@ const getPayrollStats = async (req, res) => {
         presentDays++;
     });
 
-    // Check holidays (avoid double count)
     holidays.forEach((h) => {
       const isRecorded = attendance.find((a) => a.date === h.date);
       if (!isRecorded) holidayCount++;
@@ -315,17 +322,14 @@ const getPayrollStats = async (req, res) => {
     let paidLeaveDays = 0;
     let unpaidLeaveDays = 0;
 
-    // ✅ Logic to count only leaves falling inside selected date range
     leaves.forEach((l) => {
       const leaveStart = new Date(l.startDate);
       const leaveEnd = new Date(l.endDate);
       const payStart = new Date(sStr);
       const payEnd = new Date(eStr);
 
-      // Check for overlap
       if (leaveStart <= payEnd && leaveEnd >= payStart) {
-        // Determine duration
-        const days = l.daysCount || 1; // Default to 1 if missing
+        const days = l.daysCount || 1;
         const val = l.dayType === "Half Day" ? 0.5 : days;
 
         if (["Paid", "Sick", "Casual"].includes(l.leaveType)) {
