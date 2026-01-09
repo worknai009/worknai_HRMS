@@ -111,7 +111,7 @@ const Navbar = () => {
               to="/contact"
               onClick={closeMenu}
             >
-              Contact
+              Free Demo
             </Link>
           </li>
 
