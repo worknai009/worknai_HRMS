@@ -34,9 +34,7 @@ export const getClientTimeZone = () => {
 
 export const getApiBaseUrl = () => {
   const raw =
-    readEnv("REACT_APP_API_URL") ||
-    "http://localhost:5000/api";
-
+   readEnv("REACT_APP_API_URL") || "/api";
   const u = trimSlash(raw);
 
   // If user already provided .../api
