@@ -16,6 +16,7 @@ import {
   FaChevronRight,
 } from "react-icons/fa";
 import { useClientPagination } from "../../utils/useClientPagination";
+import Pagination from "../../components/Pagination";
 
 const HRManagement = () => {
   const [hrs, setHrs] = useState([]);
@@ -50,7 +51,11 @@ const HRManagement = () => {
       // fetch company (for limit banner)
       try {
         const prof = await API.get("/company/profile");
-        const c = prof?.data?.company || prof?.data?.data?.company || prof?.data?.companyProfile || null;
+        const c =
+          prof?.data?.company ||
+          prof?.data?.data?.company ||
+          prof?.data?.companyProfile ||
+          null;
         setCompany(c);
       } catch {
         // ok, ignore
@@ -66,7 +71,8 @@ const HRManagement = () => {
     fetchHRs();
   }, []);
 
-  const maxHrAdmins = Number(company?.maxHrAdmins ?? company?.hrLimit ?? 0) || 0;
+  const maxHrAdmins =
+    Number(company?.maxHrAdmins ?? company?.hrLimit ?? 0) || 0;
   const usedSlots = hrs.length;
   const isLimitReached = maxHrAdmins ? usedSlots >= maxHrAdmins : false;
 
@@ -75,7 +81,13 @@ const HRManagement = () => {
       toast.warning("HR limit reached. Please request upgrade from dashboard.");
       return;
     }
-    setFormData({ name: "", email: "", password: "", mobile: "", designation: "HR Manager" });
+    setFormData({
+      name: "",
+      email: "",
+      password: "",
+      mobile: "",
+      designation: "HR Manager",
+    });
     setIsEditMode(false);
     setSelectedId(null);
     setShowModal(true);
@@ -128,7 +140,7 @@ const HRManagement = () => {
     return hrs.filter(
       (hr) =>
         (hr.name || "").toLowerCase().includes(st) ||
-        (hr.email || "").toLowerCase().includes(st)
+        (hr.email || "").toLowerCase().includes(st),
     );
   }, [hrs, searchTerm]);
 
@@ -149,7 +161,11 @@ const HRManagement = () => {
           </div>
         </div>
 
-        <button className="btn-add" onClick={handleOpenCreate} disabled={isLimitReached}>
+        <button
+          className="btn-add"
+          onClick={handleOpenCreate}
+          disabled={isLimitReached}
+        >
           <FaPlus /> Add New HR
         </button>
       </header>
@@ -207,10 +223,14 @@ const HRManagement = () => {
           paginatedItems.map((hr) => (
             <div key={hr._id} className="hr-card slide-up">
               <div className="card-top">
-                <div className="avatar">{hr.name?.charAt(0)?.toUpperCase() || "H"}</div>
+                <div className="avatar">
+                  {hr.name?.charAt(0)?.toUpperCase() || "H"}
+                </div>
                 <div className="info">
                   <h3>{hr.name}</h3>
-                  <span className="badge">{hr.designation || "HR Manager"}</span>
+                  <span className="badge">
+                    {hr.designation || "HR Manager"}
+                  </span>
                 </div>
               </div>
 
@@ -236,7 +256,7 @@ const HRManagement = () => {
         )}
       </div>
 
-      <div style={{ marginTop: '20px', paddingRight: '1rem' }}>
+      <div style={{ marginTop: "20px", paddingRight: "1rem" }}>
         <Pagination pager={pager} />
       </div>
 
@@ -258,7 +278,9 @@ const HRManagement = () => {
                   <input
                     required
                     value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, name: e.target.value })
+                    }
                   />
                 </div>
 
@@ -268,7 +290,9 @@ const HRManagement = () => {
                     type="email"
                     required
                     value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, email: e.target.value })
+                    }
                   />
                 </div>
 
@@ -277,18 +301,28 @@ const HRManagement = () => {
                   <input
                     required
                     value={formData.mobile}
-                    onChange={(e) => setFormData({ ...formData, mobile: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, mobile: e.target.value })
+                    }
                   />
                 </div>
 
                 <div className="form-group">
-                  <label>{isEditMode ? "New Password (Optional)" : "Password"}</label>
+                  <label>
+                    {isEditMode ? "New Password (Optional)" : "Password"}
+                  </label>
                   <input
                     type="password"
-                    placeholder={isEditMode ? "Leave blank to keep current" : "Min 6 characters"}
+                    placeholder={
+                      isEditMode
+                        ? "Leave blank to keep current"
+                        : "Min 6 characters"
+                    }
                     required={!isEditMode}
                     value={formData.password}
-                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, password: e.target.value })
+                    }
                   />
                 </div>
 
@@ -296,14 +330,26 @@ const HRManagement = () => {
                   <label>Designation</label>
                   <input
                     value={formData.designation}
-                    onChange={(e) => setFormData({ ...formData, designation: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, designation: e.target.value })
+                    }
                     placeholder="HR Manager"
                   />
                 </div>
               </div>
 
-              <button type="submit" className="submit-btn" disabled={submitting}>
-                {submitting ? <FaSpinner className="spin" /> : isEditMode ? "Save Changes" : "Create Account"}
+              <button
+                type="submit"
+                className="submit-btn"
+                disabled={submitting}
+              >
+                {submitting ? (
+                  <FaSpinner className="spin" />
+                ) : isEditMode ? (
+                  "Save Changes"
+                ) : (
+                  "Create Account"
+                )}
               </button>
             </form>
           </div>

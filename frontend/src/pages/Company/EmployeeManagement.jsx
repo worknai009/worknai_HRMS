@@ -17,6 +17,7 @@ import {
   FaChevronRight,
 } from "react-icons/fa";
 import { useClientPagination } from "../../utils/useClientPagination";
+import Pagination from "../../components/Pagination";
 
 const SERVER_URL =
   process.env.REACT_APP_SERVER_URL ||
@@ -32,8 +33,10 @@ const getMediaUrl = (path) => {
 const pickStatus = (emp) => {
   // ✅ supports multiple backend styles
   if (emp?.status) return String(emp.status);
-  if (typeof emp?.isApproved === "boolean") return emp.isApproved ? "Active" : "Pending";
-  if (typeof emp?.approved === "boolean") return emp.approved ? "Active" : "Pending";
+  if (typeof emp?.isApproved === "boolean")
+    return emp.isApproved ? "Active" : "Pending";
+  if (typeof emp?.approved === "boolean")
+    return emp.approved ? "Active" : "Pending";
   return "Active";
 };
 
@@ -117,17 +120,17 @@ const EmployeeManagement = () => {
       .filter(
         (emp) =>
           (emp.name || "").toLowerCase().includes(st) ||
-          (emp.email || "").toLowerCase().includes(st)
+          (emp.email || "").toLowerCase().includes(st),
       );
   }, [employees, searchTerm, tab]);
 
   const totalActive = useMemo(
     () => employees.filter((e) => pickStatus(e) === "Active").length,
-    [employees]
+    [employees],
   );
   const totalPending = useMemo(
     () => employees.filter((e) => pickStatus(e) === "Pending").length,
-    [employees]
+    [employees],
   );
 
   const {
@@ -138,7 +141,7 @@ const EmployeeManagement = () => {
     next,
     prev,
     canNext,
-    canPrev
+    canPrev,
   } = useClientPagination(filteredEmployees);
 
   return (
@@ -157,13 +160,22 @@ const EmployeeManagement = () => {
 
       <div className="top-row">
         <div className="tabs">
-          <button className={tab === "All" ? "active" : ""} onClick={() => setTab("All")}>
+          <button
+            className={tab === "All" ? "active" : ""}
+            onClick={() => setTab("All")}
+          >
             All <span className="count">{employees.length}</span>
           </button>
-          <button className={tab === "Active" ? "active" : ""} onClick={() => setTab("Active")}>
+          <button
+            className={tab === "Active" ? "active" : ""}
+            onClick={() => setTab("Active")}
+          >
             Active <span className="count">{totalActive}</span>
           </button>
-          <button className={tab === "Pending" ? "active" : ""} onClick={() => setTab("Pending")}>
+          <button
+            className={tab === "Pending" ? "active" : ""}
+            onClick={() => setTab("Pending")}
+          >
             Pending <span className="count">{totalPending}</span>
           </button>
         </div>
@@ -192,15 +204,21 @@ const EmployeeManagement = () => {
               <div key={emp._id} className="emp-card slide-up">
                 <div className="card-top">
                   <img
-                    src={getMediaUrl(emp.profileImage) || "https://via.placeholder.com/60"}
+                    src={
+                      getMediaUrl(emp.profileImage) ||
+                      "https://via.placeholder.com/60"
+                    }
                     alt="Profile"
                     className="avatar-img"
-                    onError={(e) => (e.target.src = "https://via.placeholder.com/60")}
+                    onError={(e) =>
+                      (e.target.src = "https://via.placeholder.com/60")
+                    }
                   />
                   <div className="info">
                     <h3>{emp.name}</h3>
                     <span className="badge">
-                      <FaUserTag size={10} /> {emp.designation || emp.role || "—"}
+                      <FaUserTag size={10} />{" "}
+                      {emp.designation || emp.role || "—"}
                     </span>
                   </div>
                   <span className={`status ${status.toLowerCase()}`}>
@@ -222,7 +240,10 @@ const EmployeeManagement = () => {
                   <span className="dot active">
                     <FaCircle size={8} /> Online
                   </span>
-                  <button className="btn-edit" onClick={() => handleOpenEdit(emp)}>
+                  <button
+                    className="btn-edit"
+                    onClick={() => handleOpenEdit(emp)}
+                  >
                     <FaEdit /> Edit
                   </button>
                 </div>
@@ -232,7 +253,7 @@ const EmployeeManagement = () => {
         )}
       </div>
 
-      <div style={{ marginTop: '20px', paddingRight: '1rem' }}>
+      <div style={{ marginTop: "20px", paddingRight: "1rem" }}>
         <Pagination pager={pager} />
       </div>
 
@@ -253,7 +274,9 @@ const EmployeeManagement = () => {
                   <input
                     required
                     value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, name: e.target.value })
+                    }
                   />
                 </div>
 
@@ -263,7 +286,9 @@ const EmployeeManagement = () => {
                     type="email"
                     required
                     value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, email: e.target.value })
+                    }
                   />
                 </div>
 
@@ -272,7 +297,9 @@ const EmployeeManagement = () => {
                   <input
                     required
                     value={formData.designation}
-                    onChange={(e) => setFormData({ ...formData, designation: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, designation: e.target.value })
+                    }
                   />
                 </div>
 
@@ -281,7 +308,9 @@ const EmployeeManagement = () => {
                   <input
                     required
                     value={formData.mobile}
-                    onChange={(e) => setFormData({ ...formData, mobile: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, mobile: e.target.value })
+                    }
                   />
                 </div>
 
@@ -291,12 +320,18 @@ const EmployeeManagement = () => {
                     type="password"
                     placeholder="Leave empty to keep current"
                     value={formData.password}
-                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, password: e.target.value })
+                    }
                   />
                 </div>
               </div>
 
-              <button type="submit" className="submit-btn" disabled={submitting}>
+              <button
+                type="submit"
+                className="submit-btn"
+                disabled={submitting}
+              >
                 {submitting ? <FaSpinner className="spin" /> : "Update Changes"}
               </button>
             </form>

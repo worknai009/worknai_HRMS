@@ -20,9 +20,11 @@ import {
   FaChevronRight,
 } from "react-icons/fa";
 import { useClientPagination } from "../../utils/useClientPagination";
+import Pagination from "../../components/Pagination";
 
 const TZ = "Asia/Kolkata";
-const todayYMD = () => new Intl.DateTimeFormat("en-CA", { timeZone: TZ }).format(new Date());
+const todayYMD = () =>
+  new Intl.DateTimeFormat("en-CA", { timeZone: TZ }).format(new Date());
 
 const safeArr = (v) => (Array.isArray(v) ? v : []);
 
@@ -30,7 +32,11 @@ const formatDate = (iso) => {
   if (!iso) return "--";
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "--";
-  return new Intl.DateTimeFormat("en-IN", { day: "2-digit", month: "short", year: "numeric" }).format(d);
+  return new Intl.DateTimeFormat("en-IN", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  }).format(d);
 };
 
 const statusKey = (s) => String(s || "").toLowerCase();
@@ -96,9 +102,13 @@ const LeaveRequest = () => {
 
   const summary = useMemo(() => {
     const arr = safeArr(leaves);
-    const approved = arr.filter((l) => statusKey(l.status) === "approved").length;
+    const approved = arr.filter(
+      (l) => statusKey(l.status) === "approved",
+    ).length;
     const pending = arr.filter((l) => statusKey(l.status) === "pending").length;
-    const rejected = arr.filter((l) => statusKey(l.status) === "rejected").length;
+    const rejected = arr.filter(
+      (l) => statusKey(l.status) === "rejected",
+    ).length;
     return { total: arr.length, approved, pending, rejected };
   }, [leaves]);
 
@@ -107,7 +117,10 @@ const LeaveRequest = () => {
     const qq = q.trim().toLowerCase();
 
     return arr.filter((l) => {
-      const okStatus = statusFilter === "All" ? true : statusKey(l.status) === statusFilter.toLowerCase();
+      const okStatus =
+        statusFilter === "All"
+          ? true
+          : statusKey(l.status) === statusFilter.toLowerCase();
       if (!okStatus) return false;
 
       if (!qq) return true;
@@ -125,7 +138,8 @@ const LeaveRequest = () => {
     const { startDate, endDate, reason } = form;
     if (!startDate || !endDate) return "Please select start & end date";
     if (!reason.trim()) return "Reason is required";
-    if (new Date(startDate) > new Date(endDate)) return "Start date should be before end date";
+    if (new Date(startDate) > new Date(endDate))
+      return "Start date should be before end date";
     return null;
   };
 
@@ -147,14 +161,27 @@ const LeaveRequest = () => {
       const isToday = form.startDate === todayYMD();
 
       if (isWFH && isSingleDay && isToday) {
-        await API.post("/employee/wfh-request", { reason: payload.reason, dayType: payload.dayType });
+        await API.post("/employee/wfh-request", {
+          reason: payload.reason,
+          dayType: payload.dayType,
+        });
         toast.success("WFH Request Sent! 🏠");
       } else {
         await API.post("/leaves/apply", payload);
-        toast.success(isWFH ? "WFH Request Submitted! 🏠" : "Leave Application Submitted! 🚀");
+        toast.success(
+          isWFH
+            ? "WFH Request Submitted! 🏠"
+            : "Leave Application Submitted! 🚀",
+        );
       }
 
-      setForm({ leaveType: "Paid", dayType: "Full Day", startDate: "", endDate: "", reason: "" });
+      setForm({
+        leaveType: "Paid",
+        dayType: "Full Day",
+        startDate: "",
+        endDate: "",
+        reason: "",
+      });
       await fetchLeaves(true);
     } catch (err) {
       toast.error(err.response?.data?.message || "Failed to submit request");
@@ -170,7 +197,11 @@ const LeaveRequest = () => {
     <div className="page slide-up">
       <header className="head">
         <div className="headTop">
-          <button className="back" onClick={() => navigate("/employee/dashboard")} type="button">
+          <button
+            className="back"
+            onClick={() => navigate("/employee/dashboard")}
+            type="button"
+          >
             <FaArrowLeft /> Dashboard
           </button>
 
@@ -220,7 +251,9 @@ const LeaveRequest = () => {
         <div className="panel">
           <div className="pHead">
             <div className="pTitle">Apply for Leave / WFH</div>
-            <div className="pSub">Tip: WFH (Today only) uses fastest backend route automatically.</div>
+            <div className="pSub">
+              Tip: WFH (Today only) uses fastest backend route automatically.
+            </div>
           </div>
 
           <form onSubmit={handleSubmit} className="form">
@@ -247,7 +280,9 @@ const LeaveRequest = () => {
                 <select
                   className="input"
                   value={form.dayType}
-                  onChange={(e) => setForm((p) => ({ ...p, dayType: e.target.value }))}
+                  onChange={(e) =>
+                    setForm((p) => ({ ...p, dayType: e.target.value }))
+                  }
                 >
                   <option value="Full Day">Full Day</option>
                   <option value="Half Day">Half Day</option>
@@ -281,7 +316,9 @@ const LeaveRequest = () => {
                     type="date"
                     className="input"
                     value={form.startDate}
-                    onChange={(e) => setForm((p) => ({ ...p, startDate: e.target.value }))}
+                    onChange={(e) =>
+                      setForm((p) => ({ ...p, startDate: e.target.value }))
+                    }
                     required
                   />
                 </div>
@@ -295,7 +332,9 @@ const LeaveRequest = () => {
                     type="date"
                     className="input"
                     value={form.endDate}
-                    onChange={(e) => setForm((p) => ({ ...p, endDate: e.target.value }))}
+                    onChange={(e) =>
+                      setForm((p) => ({ ...p, endDate: e.target.value }))
+                    }
                     required
                   />
                 </div>
@@ -308,7 +347,9 @@ const LeaveRequest = () => {
                 className="input area"
                 rows={3}
                 value={form.reason}
-                onChange={(e) => setForm((p) => ({ ...p, reason: e.target.value }))}
+                onChange={(e) =>
+                  setForm((p) => ({ ...p, reason: e.target.value }))
+                }
                 placeholder="e.g. Personal work, Not feeling well..."
                 required
               />
@@ -331,12 +372,19 @@ const LeaveRequest = () => {
           <div className="filters">
             <div className="search">
               <FaSearch className="sIc" />
-              <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search type / status / reason…" />
+              <input
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+                placeholder="Search type / status / reason…"
+              />
             </div>
 
             <div className="sel">
               <FaFilter className="fIc" />
-              <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+              >
                 <option value="All">All</option>
                 <option value="Approved">Approved</option>
                 <option value="Pending">Pending</option>
@@ -369,10 +417,14 @@ const LeaveRequest = () => {
                   <div className="iBody">
                     <div className="top">
                       <div className="name">
-                        <span className={`type t-${chip(l.leaveType)}`}>{l.leaveType}</span>
+                        <span className={`type t-${chip(l.leaveType)}`}>
+                          {l.leaveType}
+                        </span>
                         <span className="dayType">{l.dayType || "--"}</span>
                       </div>
-                      <span className={`st s-${statusKey(l.status)}`}>{l.status}</span>
+                      <span className={`st s-${statusKey(l.status)}`}>
+                        {l.status}
+                      </span>
                     </div>
 
                     <div className="meta">
@@ -389,7 +441,7 @@ const LeaveRequest = () => {
             )}
           </div>
 
-          <div style={{ padding: '15px', borderTop: '1px solid #e5e7eb' }}>
+          <div style={{ padding: "15px", borderTop: "1px solid #e5e7eb" }}>
             <Pagination pager={pager} />
           </div>
         </div>
@@ -728,7 +780,7 @@ const LeaveRequest = () => {
           to{ opacity:1; transform: translateY(0); }
         }
       `}</style>
-    </div >
+    </div>
   );
 };
 
