@@ -142,7 +142,23 @@ const EmployeeManagement = () => {
     prev,
     canNext,
     canPrev,
+    page,
+    totalPages,
+    goToPage,
   } = useClientPagination(filteredEmployees);
+
+  const pager = {
+    page,
+    totalPages,
+    goToPage,
+    next,
+    prev,
+    canNext,
+    canPrev,
+    startIndex,
+    endIndex,
+    totalItems,
+  };
 
   return (
     <div className="emp-page">

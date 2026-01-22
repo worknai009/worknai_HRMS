@@ -1,4 +1,10 @@
-import React, { useEffect, useMemo, useRef, useState, useCallback } from "react";
+import React, {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useCallback,
+} from "react";
 import API from "../../services/api";
 import { toast } from "react-toastify";
 import { useAuth } from "../../context/AuthContext";
@@ -20,7 +26,12 @@ import {
 } from "react-icons/fa";
 import { useClientPagination } from "../../utils/useClientPagination";
 
-import { GoogleMap, useJsApiLoader, Marker, Circle } from "@react-google-maps/api";
+import {
+  GoogleMap,
+  useJsApiLoader,
+  Marker,
+  Circle,
+} from "@react-google-maps/api";
 
 /* =========================
    GOOGLE MAPS CONFIG
@@ -46,8 +57,7 @@ const haversineMeters = (a, b) => {
   const Δλ = ((lon2 - lon1) * Math.PI) / 180;
 
   const x =
-    Math.sin(Δφ / 2) ** 2 +
-    Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) ** 2;
+    Math.sin(Δφ / 2) ** 2 + Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) ** 2;
 
   return R * (2 * Math.atan2(Math.sqrt(x), Math.sqrt(1 - x)));
 };
@@ -63,10 +73,13 @@ const computeDistanceMeters = (a, b) => {
     ) {
       const p1 = new window.google.maps.LatLng(Number(a.lat), Number(a.lng));
       const p2 = new window.google.maps.LatLng(Number(b.lat), Number(b.lng));
-      const d = window.google.maps.geometry.spherical.computeDistanceBetween(p1, p2);
+      const d = window.google.maps.geometry.spherical.computeDistanceBetween(
+        p1,
+        p2,
+      );
       return Number.isFinite(d) ? d : null;
     }
-  } catch (e) { }
+  } catch (e) {}
   return haversineMeters(a, b);
 };
 
@@ -77,16 +90,13 @@ const computeDistanceMeters = (a, b) => {
  */
 const getQuickPosition = ({ timeoutMs = 5500 } = {}) => {
   return new Promise((resolve, reject) => {
-    if (!navigator.geolocation) return reject(new Error("Geolocation not supported"));
-    navigator.geolocation.getCurrentPosition(
-      resolve,
-      reject,
-      {
-        enableHighAccuracy: false,
-        timeout: timeoutMs,
-        maximumAge: 10000, // allow small cache for speed
-      }
-    );
+    if (!navigator.geolocation)
+      return reject(new Error("Geolocation not supported"));
+    navigator.geolocation.getCurrentPosition(resolve, reject, {
+      enableHighAccuracy: false,
+      timeout: timeoutMs,
+      maximumAge: 10000, // allow small cache for speed
+    });
   });
 };
 
@@ -96,7 +106,8 @@ const getAccuratePosition = ({
   enableHighAccuracy = true,
 } = {}) => {
   return new Promise((resolve, reject) => {
-    if (!navigator.geolocation) return reject(new Error("Geolocation not supported"));
+    if (!navigator.geolocation)
+      return reject(new Error("Geolocation not supported"));
 
     const opts = { enableHighAccuracy, timeout: 12000, maximumAge: 0 };
     let best = null;
@@ -120,7 +131,8 @@ const getAccuratePosition = ({
 
     const consider = (pos) => {
       const acc = Number(pos?.coords?.accuracy);
-      if (!best || (Number.isFinite(acc) && acc < Number(best.coords.accuracy))) best = pos;
+      if (!best || (Number.isFinite(acc) && acc < Number(best.coords.accuracy)))
+        best = pos;
       if (Number.isFinite(acc) && acc <= desiredAccuracy) finish(pos);
     };
 
@@ -134,13 +146,13 @@ const getAccuratePosition = ({
         watchId = navigator.geolocation.watchPosition(
           (p) => consider(p),
           (e) => (best ? finish(best, true) : fail(e)),
-          { enableHighAccuracy, maximumAge: 0, timeout: 12000 }
+          { enableHighAccuracy, maximumAge: 0, timeout: 12000 },
         );
 
         setTimeout(() => finish(best || pos, true), maxWaitMs);
       },
       (err) => fail(err),
-      opts
+      opts,
     );
   });
 };
@@ -158,18 +170,29 @@ const formatYMD = (ymd) => {
   if (/^\d{4}-\d{2}-\d{2}$/.test(ymd)) {
     const [y, m, d] = ymd.split("-").map((x) => Number(x));
     const dt = new Date(Date.UTC(y, m - 1, d));
-    return new Intl.DateTimeFormat("en-IN", { day: "2-digit", month: "short", year: "numeric" }).format(dt);
+    return new Intl.DateTimeFormat("en-IN", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    }).format(dt);
   }
   const dt = new Date(ymd);
   if (Number.isNaN(dt.getTime())) return String(ymd);
-  return new Intl.DateTimeFormat("en-IN", { day: "2-digit", month: "short", year: "numeric" }).format(dt);
+  return new Intl.DateTimeFormat("en-IN", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  }).format(dt);
 };
 
 const formatTime = (iso) => {
   if (!iso) return "--";
   const dt = new Date(iso);
   if (Number.isNaN(dt.getTime())) return "--";
-  return new Intl.DateTimeFormat("en-IN", { hour: "2-digit", minute: "2-digit" }).format(dt);
+  return new Intl.DateTimeFormat("en-IN", {
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(dt);
 };
 
 const clampText = (s, max = 42) => {
@@ -180,16 +203,27 @@ const clampText = (s, max = 42) => {
 };
 
 const getMorningReport = (row) =>
-  row?.morningReport || row?.plannedTasks || row?.plan || row?.reportIn || row?.shiftPlan || "";
+  row?.morningReport ||
+  row?.plannedTasks ||
+  row?.plan ||
+  row?.reportIn ||
+  row?.shiftPlan ||
+  "";
 
 const getDailyReport = (row) =>
-  row?.dailyReport || row?.endReport || row?.report || row?.reportOut || row?.summary || "";
+  row?.dailyReport ||
+  row?.endReport ||
+  row?.report ||
+  row?.reportOut ||
+  row?.summary ||
+  "";
 
 const getLocationLink = (row) => {
   const loc = row?.location || row?.punchInLocation || row?.gps || null;
   const lat = loc?.lat ?? loc?.latitude;
   const lng = loc?.lng ?? loc?.longitude;
-  if (!Number.isFinite(Number(lat)) || !Number.isFinite(Number(lng))) return null;
+  if (!Number.isFinite(Number(lat)) || !Number.isFinite(Number(lng)))
+    return null;
   return `https://www.google.com/maps?q=${lat},${lng}`;
 };
 
@@ -245,7 +279,11 @@ const TextCell = ({ label, value, onOpen }) => {
     <div className="textcell">
       <div className="textcell-main">{has ? clampText(value) : "--"}</div>
       {has && String(value).length > 45 ? (
-        <button className="linkbtn" type="button" onClick={() => onOpen(label, value)}>
+        <button
+          className="linkbtn"
+          type="button"
+          onClick={() => onOpen(label, value)}
+        >
           View
         </button>
       ) : null}
@@ -280,11 +318,17 @@ const Attendance = () => {
   const mountedRef = useRef(true);
 
   const tz = useMemo(() => {
-    return user?.companyId?.officeTiming?.timeZone || user?.companyId?.timeZone || "Asia/Kolkata";
+    return (
+      user?.companyId?.officeTiming?.timeZone ||
+      user?.companyId?.timeZone ||
+      "Asia/Kolkata"
+    );
   }, [user]);
 
   const todayYMD = useMemo(() => {
-    return new Intl.DateTimeFormat("en-CA", { timeZone: tz }).format(new Date());
+    return new Intl.DateTimeFormat("en-CA", { timeZone: tz }).format(
+      new Date(),
+    );
   }, [tz]);
 
   const officePos = useMemo(() => {
@@ -350,7 +394,9 @@ const Attendance = () => {
       ]);
 
       const histData =
-        hRes.status === "fulfilled" && Array.isArray(hRes.value?.data) ? hRes.value.data : [];
+        hRes.status === "fulfilled" && Array.isArray(hRes.value?.data)
+          ? hRes.value.data
+          : [];
       const statData = sRes.status === "fulfilled" ? sRes.value?.data : null;
 
       if (!mountedRef.current) return;
@@ -365,7 +411,8 @@ const Attendance = () => {
     }
   };
 
-  const openTextModal = (title, text) => setModal({ open: true, title, text: String(text || "") });
+  const openTextModal = (title, text) =>
+    setModal({ open: true, title, text: String(text || "") });
   const closeModal = () => setModal({ open: false, title: "", text: "" });
 
   const distanceLabel = (d) => {
@@ -379,89 +426,98 @@ const Attendance = () => {
    * - quick pos immediately (5s)
    * - refine in background if accuracy is poor
    */
-  const detectLocation = useCallback(async ({ desiredAccuracy = 60 } = {}) => {
-    if (!navigator.geolocation) {
-      toast.error("Geolocation not supported");
-      return null;
-    }
-
-    setLocLoading(true);
-
-    const applyPos = (pos) => {
-      const lat = pos.coords.latitude;
-      const lng = pos.coords.longitude;
-      const accuracy = Number(pos.coords.accuracy);
-
-      const my = { lat, lng };
-      setCurrentPos(my);
-      setGpsAccuracy(Number.isFinite(accuracy) ? accuracy : null);
-
-      if (officePos) {
-        const d = computeDistanceMeters(my, officePos);
-        setDistanceMeters(d);
-        setInside(d != null ? d <= radiusMeters : false);
-      } else {
-        setDistanceMeters(null);
-        setInside(true);
+  const detectLocation = useCallback(
+    async ({ desiredAccuracy = 60 } = {}) => {
+      if (!navigator.geolocation) {
+        toast.error("Geolocation not supported");
+        return null;
       }
 
-      return { lat, lng, accuracy: Number.isFinite(accuracy) ? accuracy : null };
-    };
+      setLocLoading(true);
 
-    try {
-      if (!GOOGLE_MAPS_API_KEY) {
-        toast.info("Map key missing. GPS will still work.");
-      }
+      const applyPos = (pos) => {
+        const lat = pos.coords.latitude;
+        const lng = pos.coords.longitude;
+        const accuracy = Number(pos.coords.accuracy);
 
-      // 1) QUICK fix
-      let quick = null;
+        const my = { lat, lng };
+        setCurrentPos(my);
+        setGpsAccuracy(Number.isFinite(accuracy) ? accuracy : null);
+
+        if (officePos) {
+          const d = computeDistanceMeters(my, officePos);
+          setDistanceMeters(d);
+          setInside(d != null ? d <= radiusMeters : false);
+        } else {
+          setDistanceMeters(null);
+          setInside(true);
+        }
+
+        return {
+          lat,
+          lng,
+          accuracy: Number.isFinite(accuracy) ? accuracy : null,
+        };
+      };
+
       try {
-        const posQuick = await getQuickPosition({ timeoutMs: 5500 });
-        quick = applyPos(posQuick);
-      } catch (e) {
-        // ignore; will try accurate below
+        if (!GOOGLE_MAPS_API_KEY) {
+          toast.info("Map key missing. GPS will still work.");
+        }
+
+        // 1) QUICK fix
+        let quick = null;
+        try {
+          const posQuick = await getQuickPosition({ timeoutMs: 5500 });
+          quick = applyPos(posQuick);
+        } catch (e) {
+          // ignore; will try accurate below
+        }
+
+        // if quick already good enough -> done
+        if (quick?.accuracy != null && quick.accuracy <= desiredAccuracy) {
+          toast.success(`Location Locked ✅ (±${Math.round(quick.accuracy)}m)`);
+          return quick;
+        }
+
+        // 2) REFINE fix (fast cap 12s)
+        const posAcc = await getAccuratePosition({
+          desiredAccuracy,
+          maxWaitMs: 12000,
+          enableHighAccuracy: true,
+        });
+
+        const refined = applyPos(posAcc);
+
+        toast.success(
+          `Location Locked ✅ (±${refined?.accuracy != null ? Math.round(refined.accuracy) : "?"}m)`,
+        );
+
+        return refined || quick;
+      } catch (err) {
+        console.error(err);
+        const msg =
+          err?.code === 1
+            ? "Location permission denied. Please allow location."
+            : err?.code === 2
+              ? "Location unavailable. Turn ON GPS."
+              : err?.code === 3
+                ? "Location timeout. Try again."
+                : "Location error. Try again.";
+        toast.error(msg);
+        return null;
+      } finally {
+        setLocLoading(false);
       }
-
-      // if quick already good enough -> done
-      if (quick?.accuracy != null && quick.accuracy <= desiredAccuracy) {
-        toast.success(`Location Locked ✅ (±${Math.round(quick.accuracy)}m)`);
-        return quick;
-      }
-
-      // 2) REFINE fix (fast cap 12s)
-      const posAcc = await getAccuratePosition({
-        desiredAccuracy,
-        maxWaitMs: 12000,
-        enableHighAccuracy: true,
-      });
-
-      const refined = applyPos(posAcc);
-
-      toast.success(
-        `Location Locked ✅ (±${refined?.accuracy != null ? Math.round(refined.accuracy) : "?"}m)`
-      );
-
-      return refined || quick;
-    } catch (err) {
-      console.error(err);
-      const msg =
-        err?.code === 1
-          ? "Location permission denied. Please allow location."
-          : err?.code === 2
-            ? "Location unavailable. Turn ON GPS."
-            : err?.code === 3
-              ? "Location timeout. Try again."
-              : "Location error. Try again.";
-      toast.error(msg);
-      return null;
-    } finally {
-      setLocLoading(false);
-    }
-  }, [officePos, radiusMeters]);
+    },
+    [officePos, radiusMeters],
+  );
 
   const ensureOfficeInsideIfNeeded = async () => {
     if (!officePos) {
-      toast.info("Office location not configured by Admin. Skipping geo-check.");
+      toast.info(
+        "Office location not configured by Admin. Skipping geo-check.",
+      );
       return { ok: true, payload: {} };
     }
 
@@ -471,10 +527,14 @@ const Attendance = () => {
 
     const d = computeDistanceMeters({ lat: loc.lat, lng: loc.lng }, officePos);
     const isInside = d != null ? d <= radiusMeters : false;
-    const enforce = String(attendanceMethod || "").toUpperCase().includes("GPS");
+    const enforce = String(attendanceMethod || "")
+      .toUpperCase()
+      .includes("GPS");
 
     if (enforce && !isInside) {
-      toast.error(`❌ Outside office radius (${radiusMeters}m). Action blocked.`);
+      toast.error(
+        `❌ Outside office radius (${radiusMeters}m). Action blocked.`,
+      );
       return { ok: false, payload: null };
     }
 
@@ -504,7 +564,8 @@ const Attendance = () => {
       const { ok, payload } = await ensureOfficeInsideIfNeeded();
       if (!ok) return;
 
-      const endpoint = type === "start" ? "/attendance/break-start" : "/attendance/break-end";
+      const endpoint =
+        type === "start" ? "/attendance/break-start" : "/attendance/break-end";
       await API.post(endpoint, payload || {});
       toast.success(type === "start" ? "Break Started ☕" : "Welcome Back! 🚀");
       loadAll(true);
@@ -516,7 +577,9 @@ const Attendance = () => {
   const filteredRows = useMemo(() => {
     const q = query.trim().toLowerCase();
     const base = Array.isArray(history) ? history : [];
-    const rows = onlyToday ? base.filter((r) => String(r?.date) === todayYMD) : base;
+    const rows = onlyToday
+      ? base.filter((r) => String(r?.date) === todayYMD)
+      : base;
     if (!q) return rows;
 
     return rows.filter((r) => {
@@ -541,20 +604,34 @@ const Attendance = () => {
     next,
     prev,
     canNext,
-    canPrev
+    canPrev,
+    page,
+    totalPages,
+    goToPage,
   } = useClientPagination(filteredRows);
+
+  const pager = {
+    page,
+    totalPages,
+    goToPage,
+    next,
+    prev,
+    canNext,
+    canPrev,
+    startIndex,
+    endIndex,
+    totalItems,
+  };
 
   const summary = useMemo(() => {
     // robust mapping (old + new)
     if (stats && typeof stats === "object") {
-      const present = stats.present ?? stats.presentDays ?? stats.presentCount ?? 0;
-      const halfDays = stats.halfDays ?? stats.halfDay ?? stats.halfDayCount ?? 0;
+      const present =
+        stats.present ?? stats.presentDays ?? stats.presentCount ?? 0;
+      const halfDays =
+        stats.halfDays ?? stats.halfDay ?? stats.halfDayCount ?? 0;
 
-      const wfh =
-        stats.wfh ??
-        stats.wfhDays ??
-        stats.wfhCount ??
-        0;
+      const wfh = stats.wfh ?? stats.wfhDays ?? stats.wfhCount ?? 0;
 
       const paid = stats.paidLeaveDays ?? stats.paidLeaves ?? 0;
       const unpaid = stats.unpaidLeaveDays ?? stats.unpaidLeaves ?? 0;
@@ -562,7 +639,7 @@ const Attendance = () => {
       const leaves =
         stats.leaves ??
         stats.leaveDays ??
-        (Number(paid || 0) + Number(unpaid || 0)) ??
+        Number(paid || 0) + Number(unpaid || 0) ??
         0;
 
       return { present, halfDays, wfh, leaves };
@@ -570,9 +647,15 @@ const Attendance = () => {
 
     // fallback compute
     const arr = Array.isArray(history) ? history : [];
-    const present = arr.filter((r) => String(normalizeAttendanceLabel(r)).toLowerCase() === "present").length;
-    const halfDays = arr.filter((r) => String(normalizeAttendanceLabel(r)).toLowerCase() === "halfday").length;
-    const wfh = arr.filter((r) => String(normalizeAttendanceLabel(r)).toLowerCase() === "wfh").length;
+    const present = arr.filter(
+      (r) => String(normalizeAttendanceLabel(r)).toLowerCase() === "present",
+    ).length;
+    const halfDays = arr.filter(
+      (r) => String(normalizeAttendanceLabel(r)).toLowerCase() === "halfday",
+    ).length;
+    const wfh = arr.filter(
+      (r) => String(normalizeAttendanceLabel(r)).toLowerCase() === "wfh",
+    ).length;
     const leaves = arr.filter((r) => {
       const k = String(normalizeAttendanceLabel(r)).toLowerCase();
       return k === "paid leave" || k === "unpaid leave";
@@ -582,15 +665,21 @@ const Attendance = () => {
   }, [stats, history]);
 
   const disableBreakButtons = useMemo(() => {
-    const todayRec = (Array.isArray(history) ? history : []).find((r) => String(r?.date) === todayYMD);
-    if (!todayRec) return { start: true, end: true, reason: "No active attendance today" };
+    const todayRec = (Array.isArray(history) ? history : []).find(
+      (r) => String(r?.date) === todayYMD,
+    );
+    if (!todayRec)
+      return { start: true, end: true, reason: "No active attendance today" };
 
-    const label = String(normalizeAttendanceLabel(todayRec) || "").toLowerCase();
+    const label = String(
+      normalizeAttendanceLabel(todayRec) || "",
+    ).toLowerCase();
     const mode = String(todayRec?.mode || "").toLowerCase();
     const st = String(todayRec?.status || "").toLowerCase();
 
     const completed = !!todayRec?.punchOutTime || st === "completed";
-    if (completed) return { start: true, end: true, reason: "Shift already completed" };
+    if (completed)
+      return { start: true, end: true, reason: "Shift already completed" };
 
     // leave/holiday: disable breaks
     const isNonWorking =
@@ -601,9 +690,19 @@ const Attendance = () => {
       mode === "unpaid leave" ||
       mode === "holiday";
 
-    if (isNonWorking) return { start: true, end: true, reason: "Break not available on Leave/Holiday" };
+    if (isNonWorking)
+      return {
+        start: true,
+        end: true,
+        reason: "Break not available on Leave/Holiday",
+      };
 
-    if (label === "on break" || label === "on-break" || st === "on break" || st === "on-break") {
+    if (
+      label === "on break" ||
+      label === "on-break" ||
+      st === "on break" ||
+      st === "on-break"
+    ) {
       return { start: true, end: false, reason: "" };
     }
 
@@ -677,11 +776,18 @@ const Attendance = () => {
         </div>
 
         <div className="locMetaRow">
-          <span className={`badge ${officePos ? (inside ? "ok" : "bad") : "neutral"}`}>
-            {officePos ? (inside ? "Inside Office Radius ✅" : "Outside Radius ❌") : "Office location not configured"}
+          <span
+            className={`badge ${officePos ? (inside ? "ok" : "bad") : "neutral"}`}
+          >
+            {officePos
+              ? inside
+                ? "Inside Office Radius ✅"
+                : "Outside Radius ❌"
+              : "Office location not configured"}
           </span>
           <span className="meta">
-            Accuracy: <b>{gpsAccuracy != null ? `±${Math.round(gpsAccuracy)}m` : "--"}</b>
+            Accuracy:{" "}
+            <b>{gpsAccuracy != null ? `±${Math.round(gpsAccuracy)}m` : "--"}</b>
           </span>
           <span className="meta">
             Distance: <b>{officePos ? distanceLabel(distanceMeters) : "--"}</b>
@@ -697,7 +803,11 @@ const Attendance = () => {
 
           {isLoaded && GOOGLE_MAPS_API_KEY ? (
             <GoogleMap
-              mapContainerStyle={{ width: "100%", height: "220px", borderRadius: "16px" }}
+              mapContainerStyle={{
+                width: "100%",
+                height: "220px",
+                borderRadius: "16px",
+              }}
               center={currentPos || officePos || { lat: 20.5937, lng: 78.9629 }}
               zoom={currentPos || officePos ? 16 : 5}
               options={{
@@ -717,7 +827,9 @@ const Attendance = () => {
             </GoogleMap>
           ) : (
             <div className="mapFallback">
-              {GOOGLE_MAPS_API_KEY ? "Loading map…" : "Google Maps not available (missing key). GPS still works."}
+              {GOOGLE_MAPS_API_KEY
+                ? "Loading map…"
+                : "Google Maps not available (missing key). GPS still works."}
             </div>
           )}
         </div>
@@ -726,8 +838,12 @@ const Attendance = () => {
       <section className="breakCard">
         <div className="bkLeft">
           <h3>Break Management</h3>
-          <p>Accurate net work hours ke liye break start/end zaroor mark karein.</p>
-          {disableBreakButtons.reason ? <div className="hint">{disableBreakButtons.reason}</div> : null}
+          <p>
+            Accurate net work hours ke liye break start/end zaroor mark karein.
+          </p>
+          {disableBreakButtons.reason ? (
+            <div className="hint">{disableBreakButtons.reason}</div>
+          ) : null}
         </div>
 
         <div className="bkBtns">
@@ -788,7 +904,9 @@ const Attendance = () => {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan="8" className="msg">Fetching your logs…</td>
+                  <td colSpan="8" className="msg">
+                    Fetching your logs…
+                  </td>
                 </tr>
               ) : paginatedItems.length === 0 ? (
                 <tr>
@@ -819,22 +937,38 @@ const Attendance = () => {
                       </td>
 
                       <td className="hours">
-                        <strong>{net ? net.toFixed(2) : "0.00"}</strong> <small>hrs</small>
-                      </td>
-
-                      <td><StatusPill row={row} /></td>
-
-                      <td>
-                        <TextCell label="Morning Plan" value={getMorningReport(row)} onOpen={openTextModal} />
+                        <strong>{net ? net.toFixed(2) : "0.00"}</strong>{" "}
+                        <small>hrs</small>
                       </td>
 
                       <td>
-                        <TextCell label="Daily Report" value={getDailyReport(row)} onOpen={openTextModal} />
+                        <StatusPill row={row} />
+                      </td>
+
+                      <td>
+                        <TextCell
+                          label="Morning Plan"
+                          value={getMorningReport(row)}
+                          onOpen={openTextModal}
+                        />
+                      </td>
+
+                      <td>
+                        <TextCell
+                          label="Daily Report"
+                          value={getDailyReport(row)}
+                          onOpen={openTextModal}
+                        />
                       </td>
 
                       <td>
                         {locLink ? (
-                          <a className="mapLink" href={locLink} target="_blank" rel="noreferrer">
+                          <a
+                            className="mapLink"
+                            href={locLink}
+                            target="_blank"
+                            rel="noreferrer"
+                          >
                             <FaMapMarkerAlt /> Map
                           </a>
                         ) : (
@@ -848,7 +982,7 @@ const Attendance = () => {
             </tbody>
           </table>
 
-          <div style={{ padding: '10px' }}>
+          <div style={{ padding: "10px" }}>
             <Pagination pager={pager} />
           </div>
         </div>
@@ -872,7 +1006,11 @@ const Attendance = () => {
             </div>
 
             <div className="mFoot">
-              <button className="btn btn-solid" type="button" onClick={closeModal}>
+              <button
+                className="btn btn-solid"
+                type="button"
+                onClick={closeModal}
+              >
                 Close
               </button>
             </div>
