@@ -19,16 +19,7 @@ import {
 import { useClientPagination } from "../../utils/useClientPagination";
 import Pagination from "../../components/Pagination";
 
-const SERVER_URL =
-  process.env.REACT_APP_SERVER_URL ||
-  process.env.REACT_APP_BACKEND_URL ||
-  "http://localhost:5000";
-
-const getMediaUrl = (path) => {
-  if (!path) return null;
-  const clean = String(path).replace(/\\/g, "/").replace(/^\/+/, "");
-  return `${SERVER_URL.replace(/\/+$/, "")}/${clean}`;
-};
+import { getAssetUrl } from "../../utils/assetUrl";
 
 const pickStatus = (emp) => {
   // ✅ supports multiple backend styles
@@ -221,14 +212,15 @@ const EmployeeManagement = () => {
                 <div className="card-top">
                   <img
                     src={
-                      getMediaUrl(emp.profileImage) ||
-                      "https://via.placeholder.com/60"
+                      getAssetUrl(emp.profileImage) ||
+                      `https://ui-avatars.com/api/?name=${encodeURIComponent(emp.name)}&background=random`
                     }
                     alt="Profile"
                     className="avatar-img"
-                    onError={(e) =>
-                      (e.target.src = "https://via.placeholder.com/60")
-                    }
+                    onError={(e) => {
+                      e.target.onerror = null; // prevent loop
+                      e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(emp.name)}&background=random`;
+                    }}
                   />
                   <div className="info">
                     <h3>{emp.name}</h3>

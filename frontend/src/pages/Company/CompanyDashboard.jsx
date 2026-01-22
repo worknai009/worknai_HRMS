@@ -22,16 +22,7 @@ import {
   FaShieldAlt,
 } from "react-icons/fa";
 
-const SERVER_URL =
-  process.env.REACT_APP_SERVER_URL ||
-  process.env.REACT_APP_BACKEND_URL ||
-  "http://localhost:5000";
-
-const getMediaUrl = (path) => {
-  if (!path) return null;
-  const clean = String(path).replace(/\\/g, "/").replace(/^\/+/, "");
-  return `${SERVER_URL.replace(/\/+$/, "")}/${clean}`;
-};
+import { getAssetUrl } from "../../utils/assetUrl";
 
 const TIMEZONE_OPTIONS = [
   "Asia/Kolkata",
@@ -94,12 +85,13 @@ const CompanyDashboard = () => {
       logout();
       navigate(ROUTES.COMPANY_LOGIN);
     },
-    [logout, navigate]
+    [logout, navigate],
   );
 
   const normalizeDashboard = (payload) => {
     const root = payload?.data ?? payload ?? {};
-    const company = root.company || root?.companyProfile || root?.profile || root;
+    const company =
+      root.company || root?.companyProfile || root?.profile || root;
     const stats = root.stats || root?.counts || {};
     const employees = root.employees || root?.recentEmployees || [];
     const hrs = root.hrs || root?.hrAdmins || root?.hrList || [];
@@ -122,7 +114,9 @@ const CompanyDashboard = () => {
       setData({
         company: normalized.company,
         stats: normalized.stats || {},
-        employees: Array.isArray(normalized.employees) ? normalized.employees : [],
+        employees: Array.isArray(normalized.employees)
+          ? normalized.employees
+          : [],
         hrs: Array.isArray(normalized.hrs) ? normalized.hrs : [],
       });
 
@@ -135,8 +129,18 @@ const CompanyDashboard = () => {
       setSettings((prev) => ({
         ...prev,
         address: loc.address || prev.address,
-        lat: typeof loc.lat === "number" ? String(loc.lat) : (loc.lat ? String(loc.lat) : prev.lat),
-        lng: typeof loc.lng === "number" ? String(loc.lng) : (loc.lng ? String(loc.lng) : prev.lng),
+        lat:
+          typeof loc.lat === "number"
+            ? String(loc.lat)
+            : loc.lat
+              ? String(loc.lat)
+              : prev.lat,
+        lng:
+          typeof loc.lng === "number"
+            ? String(loc.lng)
+            : loc.lng
+              ? String(loc.lng)
+              : prev.lng,
         radius: Number(loc.radius ?? prev.radius) || prev.radius,
         startTime: office.startTime || prev.startTime,
         endTime: office.endTime || prev.endTime,
@@ -145,7 +149,8 @@ const CompanyDashboard = () => {
       }));
     } catch (err) {
       const code = err?.response?.status;
-      if (code === 401) return safeLogout("Session expired. Please login again.");
+      if (code === 401)
+        return safeLogout("Session expired. Please login again.");
       toast.error(err?.response?.data?.message || "Failed to load dashboard");
     } finally {
       setLoading(false);
@@ -161,7 +166,8 @@ const CompanyDashboard = () => {
   const hrs = data.hrs || [];
   const stats = data.stats || {};
 
-  const maxHrAdmins = Number(company?.maxHrAdmins ?? company?.hrLimit ?? 0) || 0;
+  const maxHrAdmins =
+    Number(company?.maxHrAdmins ?? company?.hrLimit ?? 0) || 0;
   const usedSlots = hrs.length;
   const freeSlots = Math.max(0, maxHrAdmins - usedSlots);
   const hrRequestStatus = company?.hrLimitRequest; // 'Pending' or null
@@ -183,15 +189,18 @@ const CompanyDashboard = () => {
     if (end <= start) return "End time must be greater than start time.";
 
     const rad = Number(settings.radius);
-    if (!rad || rad < 50 || rad > 5000) return "Radius must be between 50 and 5000 meters.";
+    if (!rad || rad < 50 || rad > 5000)
+      return "Radius must be between 50 and 5000 meters.";
 
     const lat = settings.lat?.trim();
     const lng = settings.lng?.trim();
-    if ((lat && !lng) || (!lat && lng)) return "Please enter both Latitude and Longitude.";
+    if ((lat && !lng) || (!lat && lng))
+      return "Please enter both Latitude and Longitude.";
     if (lat && lng) {
       const latNum = Number(lat);
       const lngNum = Number(lng);
-      if (Number.isNaN(latNum) || Number.isNaN(lngNum)) return "Latitude/Longitude must be numbers.";
+      if (Number.isNaN(latNum) || Number.isNaN(lngNum))
+        return "Latitude/Longitude must be numbers.";
     }
 
     return null;
@@ -264,7 +273,10 @@ const CompanyDashboard = () => {
         const fd = new FormData();
         fd.append("location", JSON.stringify(payloadObj.location));
         fd.append("officeTiming", JSON.stringify(payloadObj.officeTiming));
-        fd.append("attendancePolicy", JSON.stringify(payloadObj.attendancePolicy));
+        fd.append(
+          "attendancePolicy",
+          JSON.stringify(payloadObj.attendancePolicy),
+        );
 
         await API.put("/company/update", fd, {
           headers: { "Content-Type": "multipart/form-data" },
@@ -313,7 +325,7 @@ const CompanyDashboard = () => {
         onClick: () => navigate(ROUTES.EMP_MANAGEMENT),
       },
     ],
-    [navigate]
+    [navigate],
   );
 
   if (loading) {
@@ -370,14 +382,22 @@ const CompanyDashboard = () => {
             <div className="logoBox">
               <div className="logo">
                 {logoPreview || company?.logo ? (
-                  <img src={logoPreview || getMediaUrl(company.logo)} alt="Company logo" />
+                  <img
+                    src={logoPreview || getAssetUrl(company.logo)}
+                    alt="Company logo"
+                  />
                 ) : (
                   <div className="initials">{getInitials(company?.name)}</div>
                 )}
               </div>
               <label className="camBtn" title="Update logo">
                 <FaCamera />
-                <input type="file" hidden accept="image/*" onChange={handleLogoChange} />
+                <input
+                  type="file"
+                  hidden
+                  accept="image/*"
+                  onChange={handleLogoChange}
+                />
               </label>
             </div>
 
@@ -389,7 +409,10 @@ const CompanyDashboard = () => {
                   <FaEnvelope /> {company?.email || "—"}
                 </span>
                 <span className="pill">
-                  <FaMapMarkerAlt /> {settings.address || company?.location?.address || "Office address not set"}
+                  <FaMapMarkerAlt />{" "}
+                  {settings.address ||
+                    company?.location?.address ||
+                    "Office address not set"}
                 </span>
               </div>
 
@@ -397,12 +420,14 @@ const CompanyDashboard = () => {
                 <span className="pill soft">
                   <FaShieldAlt /> Attendance:{" "}
                   <strong>
-                    {ATTENDANCE_METHODS.find((m) => m.value === settings.attendanceMethod)?.label ||
-                      settings.attendanceMethod}
+                    {ATTENDANCE_METHODS.find(
+                      (m) => m.value === settings.attendanceMethod,
+                    )?.label || settings.attendanceMethod}
                   </strong>
                 </span>
                 <span className="pill soft">
-                  <FaClock /> {settings.startTime} - {settings.endTime} ({settings.timeZone})
+                  <FaClock /> {settings.startTime} - {settings.endTime} (
+                  {settings.timeZone})
                 </span>
               </div>
             </div>
@@ -426,7 +451,9 @@ const CompanyDashboard = () => {
                 <div
                   className="limitFill"
                   style={{
-                    width: maxHrAdmins ? `${Math.min(100, (usedSlots / maxHrAdmins) * 100)}%` : "0%",
+                    width: maxHrAdmins
+                      ? `${Math.min(100, (usedSlots / maxHrAdmins) * 100)}%`
+                      : "0%",
                   }}
                 />
               </div>
@@ -452,7 +479,11 @@ const CompanyDashboard = () => {
                   className="primaryBtn"
                   onClick={() => setShowConfirmModal(true)}
                   disabled={requesting || freeSlots > 0}
-                  title={freeSlots > 0 ? "Slots are still available" : "Request more HR slots"}
+                  title={
+                    freeSlots > 0
+                      ? "Slots are still available"
+                      : "Request more HR slots"
+                  }
                 >
                   {requesting ? "Sending..." : "Request HR Limit Increase"}
                   <FaArrowRight />
@@ -495,9 +526,14 @@ const CompanyDashboard = () => {
               </div>
               <div className="sTxt">
                 <h4>Employees</h4>
-                <strong>{stats?.totalEmployees ?? employees.length ?? 0}</strong>
+                <strong>
+                  {stats?.totalEmployees ?? employees.length ?? 0}
+                </strong>
               </div>
-              <button className="linkBtn" onClick={() => navigate(ROUTES.EMP_MANAGEMENT)}>
+              <button
+                className="linkBtn"
+                onClick={() => navigate(ROUTES.EMP_MANAGEMENT)}
+              >
                 Manage <FaArrowRight />
               </button>
             </div>
@@ -510,7 +546,10 @@ const CompanyDashboard = () => {
                 <h4>HR Managers</h4>
                 <strong>{stats?.totalHRs ?? hrs.length ?? 0}</strong>
               </div>
-              <button className="linkBtn" onClick={() => navigate(ROUTES.HR_MANAGEMENT)}>
+              <button
+                className="linkBtn"
+                onClick={() => navigate(ROUTES.HR_MANAGEMENT)}
+              >
                 Manage <FaArrowRight />
               </button>
             </div>
@@ -538,7 +577,9 @@ const CompanyDashboard = () => {
                   </label>
                   <input
                     value={settings.address}
-                    onChange={(e) => setSettings((p) => ({ ...p, address: e.target.value }))}
+                    onChange={(e) =>
+                      setSettings((p) => ({ ...p, address: e.target.value }))
+                    }
                     placeholder="e.g. Pune, Maharashtra"
                   />
                 </div>
@@ -549,7 +590,9 @@ const CompanyDashboard = () => {
                   </label>
                   <input
                     value={settings.lat}
-                    onChange={(e) => setSettings((p) => ({ ...p, lat: e.target.value }))}
+                    onChange={(e) =>
+                      setSettings((p) => ({ ...p, lat: e.target.value }))
+                    }
                     placeholder="18.5204"
                   />
                 </div>
@@ -560,7 +603,9 @@ const CompanyDashboard = () => {
                   </label>
                   <input
                     value={settings.lng}
-                    onChange={(e) => setSettings((p) => ({ ...p, lng: e.target.value }))}
+                    onChange={(e) =>
+                      setSettings((p) => ({ ...p, lng: e.target.value }))
+                    }
                     placeholder="73.8567"
                   />
                 </div>
@@ -574,9 +619,16 @@ const CompanyDashboard = () => {
                     min="50"
                     max="5000"
                     value={settings.radius}
-                    onChange={(e) => setSettings((p) => ({ ...p, radius: Number(e.target.value || 0) }))}
+                    onChange={(e) =>
+                      setSettings((p) => ({
+                        ...p,
+                        radius: Number(e.target.value || 0),
+                      }))
+                    }
                   />
-                  <small className="hint">Geo-fence used during attendance punch.</small>
+                  <small className="hint">
+                    Geo-fence used during attendance punch.
+                  </small>
                 </div>
 
                 <div className="fg">
@@ -586,7 +638,9 @@ const CompanyDashboard = () => {
                   <input
                     type="time"
                     value={settings.startTime}
-                    onChange={(e) => setSettings((p) => ({ ...p, startTime: e.target.value }))}
+                    onChange={(e) =>
+                      setSettings((p) => ({ ...p, startTime: e.target.value }))
+                    }
                   />
                 </div>
 
@@ -597,7 +651,9 @@ const CompanyDashboard = () => {
                   <input
                     type="time"
                     value={settings.endTime}
-                    onChange={(e) => setSettings((p) => ({ ...p, endTime: e.target.value }))}
+                    onChange={(e) =>
+                      setSettings((p) => ({ ...p, endTime: e.target.value }))
+                    }
                   />
                 </div>
 
@@ -605,7 +661,9 @@ const CompanyDashboard = () => {
                   <label>Time Zone</label>
                   <select
                     value={settings.timeZone}
-                    onChange={(e) => setSettings((p) => ({ ...p, timeZone: e.target.value }))}
+                    onChange={(e) =>
+                      setSettings((p) => ({ ...p, timeZone: e.target.value }))
+                    }
                   >
                     {TIMEZONE_OPTIONS.map((tz) => (
                       <option key={tz} value={tz}>
@@ -619,7 +677,12 @@ const CompanyDashboard = () => {
                   <label>Attendance Method</label>
                   <select
                     value={settings.attendanceMethod}
-                    onChange={(e) => setSettings((p) => ({ ...p, attendanceMethod: e.target.value }))}
+                    onChange={(e) =>
+                      setSettings((p) => ({
+                        ...p,
+                        attendanceMethod: e.target.value,
+                      }))
+                    }
                   >
                     {ATTENDANCE_METHODS.map((m) => (
                       <option key={m.value} value={m.value}>
@@ -627,12 +690,18 @@ const CompanyDashboard = () => {
                       </option>
                     ))}
                   </select>
-                  <small className="hint">Method used for employee punch-in/out verification.</small>
+                  <small className="hint">
+                    Method used for employee punch-in/out verification.
+                  </small>
                 </div>
               </div>
 
               <div className="saveRow">
-                <button type="submit" className="saveBtn" disabled={savingSettings}>
+                <button
+                  type="submit"
+                  className="saveBtn"
+                  disabled={savingSettings}
+                >
                   {savingSettings ? (
                     "Saving..."
                   ) : (
@@ -687,8 +756,13 @@ const CompanyDashboard = () => {
                 employees.slice(0, 8).map((emp) => (
                   <div className="row" key={emp._id}>
                     <img
-                      src={getMediaUrl(emp.profileImage) || "https://via.placeholder.com/40"}
-                      onError={(e) => (e.target.src = "https://via.placeholder.com/40")}
+                      src={
+                        getAssetUrl(emp.profileImage) ||
+                        `https://ui-avatars.com/api/?name=${encodeURIComponent(emp.name)}&background=random`
+                      }
+                      onError={(e) =>
+                        (e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(emp.name)}&background=random`)
+                      }
                       className="img"
                       alt="emp"
                     />
@@ -713,9 +787,14 @@ const CompanyDashboard = () => {
               <FaExclamationTriangle />
             </div>
             <h3>Request HR Limit Increase?</h3>
-            <p>Your HR slots are full. This will notify Super Admin for approval.</p>
+            <p>
+              Your HR slots are full. This will notify Super Admin for approval.
+            </p>
             <div className="mBtns">
-              <button className="mGhost" onClick={() => setShowConfirmModal(false)}>
+              <button
+                className="mGhost"
+                onClick={() => setShowConfirmModal(false)}
+              >
                 Cancel
               </button>
               <button className="mPrimary" onClick={confirmRequest}>
