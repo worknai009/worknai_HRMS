@@ -8,7 +8,7 @@ const JobSchema = new mongoose.Schema(
     title: { type: String, required: true, trim: true },
     department: { type: String, default: '' },
     location: { type: String, default: '' },
-    employmentType: { type: String, enum: ['Full-time', 'Part-time', 'Contract', 'Intern'], default: 'Full-time' },
+    employmentType: { type: String, enum: ['Full-time', 'Part-time', 'Contract', 'Intern', 'Internship'], default: 'Full-time' },
     openings: { type: Number, default: 1 },
 
     // ✅ Added Fields

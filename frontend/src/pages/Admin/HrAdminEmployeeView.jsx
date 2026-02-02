@@ -29,6 +29,7 @@ import {
   FaChevronLeft,
   FaChevronRight,
 } from "react-icons/fa";
+import EditEmployeeModal from "../../components/Modals/EditEmployeeModal";
 
 /* =========================
    Helpers (No import.meta)
@@ -155,6 +156,7 @@ const HrAdminEmployeeView = () => {
   });
   const [payrollStats, setPayrollStats] = useState(null);
   const [calculating, setCalculating] = useState(false);
+  const [extraDays, setExtraDays] = useState(0); // Extra Day Adjustment (0-10)
 
   // Salary slip download
   const [downloading, setDownloading] = useState(false);
@@ -309,8 +311,8 @@ const HrAdminEmployeeView = () => {
       setCalculating(true);
 
       const res = await tryReq([
-        () => API.get(`/company/payroll/${userId}?startDate=${dates.startDate}&endDate=${dates.endDate}`),
-        () => API.get(`/hr/payroll/${userId}?startDate=${dates.startDate}&endDate=${dates.endDate}`),
+        () => API.get(`/company/payroll/${userId}?startDate=${dates.startDate}&endDate=${dates.endDate}&extraDays=${extraDays}`),
+        () => API.get(`/hr/payroll/${userId}?startDate=${dates.startDate}&endDate=${dates.endDate}&extraDays=${extraDays}`),
       ]);
 
       setPayrollStats(res.data);
@@ -329,11 +331,11 @@ const HrAdminEmployeeView = () => {
 
       const res = await tryReq([
         () =>
-          API.get(`/company/payroll/salary-slip/${userId}?startDate=${dates.startDate}&endDate=${dates.endDate}`, {
+          API.get(`/company/payroll/salary-slip/${userId}?startDate=${dates.startDate}&endDate=${dates.endDate}&extraDays=${extraDays}`, {
             responseType: "blob",
           }),
         () =>
-          API.get(`/hr/payroll/salary-slip/${userId}?startDate=${dates.startDate}&endDate=${dates.endDate}`, {
+          API.get(`/hr/payroll/salary-slip/${userId}?startDate=${dates.startDate}&endDate=${dates.endDate}&extraDays=${extraDays}`, {
             responseType: "blob",
           }),
       ]);
@@ -542,51 +544,18 @@ const HrAdminEmployeeView = () => {
                   <FaEdit /> Edit Profile
                 </button>
               </div>
-            ) : (
-              <div className="edit-form animate-fade">
-                <div className="form-group">
-                  <label>Full Name</label>
-                  <input value={safeStr(editForm.name)} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} />
-                </div>
+            ) : null}
 
-                <div className="form-group">
-                  <label>Mobile Number</label>
-                  <input value={safeStr(editForm.mobile)} onChange={(e) => setEditForm({ ...editForm, mobile: e.target.value })} />
-                </div>
-
-                <div className="form-group">
-                  <label>Designation</label>
-                  <input value={safeStr(editForm.designation)} onChange={(e) => setEditForm({ ...editForm, designation: e.target.value })} />
-                </div>
-
-                <div className="form-group">
-                  <label>Basic Salary</label>
-                  <input
-                    type="number"
-                    value={editForm.basicSalary ?? ""}
-                    onChange={(e) => setEditForm({ ...editForm, basicSalary: e.target.value })}
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label>Joining Date</label>
-                  <input
-                    type="date"
-                    value={safeStr(editForm.joiningDate)}
-                    onChange={(e) => setEditForm({ ...editForm, joiningDate: e.target.value })}
-                  />
-                </div>
-
-                <div className="btn-group">
-                  <button className="btn-primary" onClick={handleUpdate}>
-                    <FaSave /> Save
-                  </button>
-                  <button className="btn-secondary" onClick={() => setIsEditing(false)} title="Cancel">
-                    <FaTimes />
-                  </button>
-                </div>
-              </div>
-            )}
+            {/* Edit Modal Logic */}
+            <EditEmployeeModal
+              isOpen={isEditing}
+              onClose={() => setIsEditing(false)}
+              employee={user}
+              onSuccess={() => {
+                fetchEmployeeKundali();
+                setIsEditing(false);
+              }}
+            />
           </div>
 
           {/* MANUAL ATTENDANCE */}
@@ -716,6 +685,15 @@ const HrAdminEmployeeView = () => {
                   <label>To</label>
                   <input type="date" value={dates.endDate} onChange={(e) => setDates({ ...dates, endDate: e.target.value })} />
                 </div>
+
+                <div className="input-wrap">
+                  <label>Extra Day Adj.</label>
+                  <select value={extraDays} onChange={(e) => setExtraDays(Number(e.target.value))}>
+                    {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(n => (
+                      <option key={n} value={n}>{n}</option>
+                    ))}
+                  </select>
+                </div>
               </div>
 
               <button className="btn-primary btn-calc" onClick={calculateSalary} disabled={calculating}>
@@ -739,6 +717,11 @@ const HrAdminEmployeeView = () => {
                   <div className="res-box">
                     <span>Holidays</span>
                     <strong>{payrollStats.holidayCount ?? payrollStats.holidays ?? 0}</strong>
+                  </div>
+
+                  <div className="res-box absent">
+                    <span>Absent Days</span>
+                    <strong>{payrollStats.absentDays ?? 0}</strong>
                   </div>
 
                   <div className="res-box total">
@@ -1028,11 +1011,12 @@ const HrAdminEmployeeView = () => {
         .btn-calc{min-width:140px;}
 
         .payroll-result{margin-top:10px;}
-        .result-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;background:#f8fafc;padding:12px;border-radius:14px;border:1px dashed var(--border);}
+        .result-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;background:#f8fafc;padding:12px;border-radius:14px;border:1px dashed var(--border);}
         .res-box{text-align:center;}
         .res-box span{display:block;font-size:11px;color:var(--muted);font-weight:900;}
         .res-box strong{font-size:14px;font-weight:950;}
         .res-box.total strong{color:var(--green);}
+        .res-box.absent strong{color:#dc2626;}
         .breakdown-note{margin-top:10px;color:var(--muted);font-weight:800;}
 
         /* Tools row */

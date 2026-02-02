@@ -156,9 +156,38 @@ const updateEmployeeDetails = async (req, res) => {
       return res.status(403).json({ message: 'Access denied' });
     }
 
-    const allowed = ['name', 'email', 'mobile', 'designation', 'department', 'managerId', 'employeeCode'];
+    const allowed = ['name', 'email', 'mobile', 'designation', 'department', 'managerId', 'employeeCode', 'basicSalary', 'salary', 'joiningDate'];
+    console.log('updateEmployeeDetails req.body:', req.body); // ✅ DEBUG LOG
+
+
+    // 1. Generic updates
     for (const k of allowed) {
-      if (k in updates) user[k] = updates[k];
+      if (k in updates && k !== 'basicSalary' && k !== 'salary' && k !== 'joiningDate') {
+        user[k] = updates[k];
+      }
+    }
+
+    // 2. Salary Sync (Update both basicSalary and salary)
+    if (updates.basicSalary !== undefined || updates.salary !== undefined) {
+      const val = updates.basicSalary !== undefined ? updates.basicSalary : updates.salary;
+      const numVal = Number(val);
+
+      if (numVal < 0 || isNaN(numVal)) {
+        return res.status(400).json({ message: 'Invalid salary value' });
+      }
+
+      user.basicSalary = numVal;
+      user.salary = numVal; // Keep legacy field in sync
+      console.log('Salary Updated to:', numVal); // ✅ DEBUG LOG
+    }
+
+    // 3. Joining Date
+    if (updates.joiningDate !== undefined) {
+      const d = new Date(updates.joiningDate);
+      if (isNaN(d.getTime())) {
+        return res.status(400).json({ message: 'Invalid joining date' });
+      }
+      user.joiningDate = d;
     }
 
     await user.save();
@@ -543,11 +572,11 @@ const getPayrollStats = async (req, res) => {
     const endStr = dayStrings[dayStrings.length - 1];
 
     const [attendance, holidays] = await Promise.all([
-     Attendance.find({
-  userId: user._id,
-  date: { $gte: startStr, $lte: endStr },
-  $or: [{ companyId: user.companyId }, { companyId: { $exists: false } }]
-}).lean(),
+      Attendance.find({
+        userId: user._id,
+        date: { $gte: startStr, $lte: endStr },
+        $or: [{ companyId: user.companyId }, { companyId: { $exists: false } }]
+      }).lean(),
       Holiday.find({ companyId: user.companyId, date: { $gte: startStr, $lte: endStr } }).lean()
     ]);
 
@@ -585,10 +614,26 @@ const getPayrollStats = async (req, res) => {
 
     const totalPayableDays = presentDays + wfhDays + paidLeaveDays + holidayCount + (halfDays * 0.5);
 
-    const STANDARD_MONTH_DAYS = 30;
+    // Fixed 30-day calculation (as per policy)
+    const FIXED_MONTH_DAYS = 30;
     const baseSalary = Number(user.basicSalary || user.salary || 0);
-    const perDaySalary = baseSalary > 0 ? baseSalary / STANDARD_MONTH_DAYS : 0;
-    const estimatedSalary = Math.round(perDaySalary * totalPayableDays);
+    const extraDays = Math.min(10, Math.max(0, parseInt(req.query.extraDays) || 0)); // 0-10 cap
+
+    // unpaidDays = absent + unpaid leave (counted in absentDays)
+    const unpaidDays = absentDays;
+
+    let estimatedSalary;
+    if (unpaidDays === 0 && extraDays === 0) {
+      // Full salary if no unpaid days and no extra adjustment
+      estimatedSalary = Math.round(baseSalary);
+    } else {
+      // Prorate using fixed 30 days
+      const perDaySalary = baseSalary > 0 ? baseSalary / FIXED_MONTH_DAYS : 0;
+      let paidDays = FIXED_MONTH_DAYS - unpaidDays + extraDays;
+      // Cap: paid_days cannot exceed 30 (no exceed monthly)
+      paidDays = Math.min(FIXED_MONTH_DAYS, Math.max(0, paidDays));
+      estimatedSalary = Math.round(perDaySalary * paidDays);
+    }
 
     res.json({
       userId: user._id,
@@ -604,8 +649,9 @@ const getPayrollStats = async (req, res) => {
       halfDays,
       holidayCount,
       absentDays,
+      extraDays,
       estimatedSalary,
-      breakdown: `Present(${presentDays}) + WFH(${wfhDays}) + PaidLeave(${paidLeaveDays}) + Holidays(${holidayCount}) + HalfDays(${halfDays * 0.5})`
+      breakdown: `Present(${presentDays}) + WFH(${wfhDays}) + PaidLeave(${paidLeaveDays}) + Holidays(${holidayCount}) + HalfDays(${halfDays * 0.5}) - Absent(${absentDays})${extraDays > 0 ? ` + Extra(${extraDays})` : ''}`
     });
   } catch (err) {
     console.error('getPayrollStats error:', err);
@@ -638,11 +684,11 @@ const generateSalarySlip = async (req, res) => {
     const endStr = dayStrings[dayStrings.length - 1];
 
     const [attendance, holidays] = await Promise.all([
-    Attendance.find({
-  userId: user._id,
-  date: { $gte: startStr, $lte: endStr },
-  $or: [{ companyId: company._id }, { companyId: { $exists: false } }]
-}).lean(),
+      Attendance.find({
+        userId: user._id,
+        date: { $gte: startStr, $lte: endStr },
+        $or: [{ companyId: company._id }, { companyId: { $exists: false } }]
+      }).lean(),
       Holiday.find({ companyId: company._id, date: { $gte: startStr, $lte: endStr } }).lean()
     ]);
 
@@ -669,10 +715,27 @@ const generateSalarySlip = async (req, res) => {
     }
 
     const totalPayableDays = presentDays + wfhDays + paidLeaveDays + holidayCount + (halfDays * 0.5);
-    const STANDARD_MONTH_DAYS = 30;
+
+    // Fixed 30-day calculation (as per policy)
+    const FIXED_MONTH_DAYS = 30;
     const baseSalary = Number(user.basicSalary || user.salary || 0);
-    const perDaySalary = baseSalary > 0 ? baseSalary / STANDARD_MONTH_DAYS : 0;
-    const estimatedSalary = Math.round(perDaySalary * totalPayableDays);
+    const extraDays = Math.min(10, Math.max(0, parseInt(req.query.extraDays) || 0)); // 0-10 cap
+
+    // unpaidDays = days that are not paid (unpaid leave + absent)
+    const totalUnpaidDays = unpaidLeaveDays;
+
+    let estimatedSalary;
+    if (totalUnpaidDays === 0 && extraDays === 0) {
+      // Full salary if no unpaid days
+      estimatedSalary = Math.round(baseSalary);
+    } else {
+      // Prorate using fixed 30 days
+      const perDaySalary = baseSalary > 0 ? baseSalary / FIXED_MONTH_DAYS : 0;
+      let paidDays = FIXED_MONTH_DAYS - totalUnpaidDays + extraDays;
+      // Cap: paid_days cannot exceed 30 (no exceed monthly)
+      paidDays = Math.min(FIXED_MONTH_DAYS, Math.max(0, paidDays));
+      estimatedSalary = Math.round(perDaySalary * paidDays);
+    }
 
     const doc = new PDFDocument({ margin: 50 });
     res.setHeader('Content-Type', 'application/pdf');

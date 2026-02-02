@@ -32,6 +32,7 @@ import {
   FaChevronLeft,
   FaChevronRight,
 } from "react-icons/fa";
+import EditEmployeeModal from "../../components/Modals/EditEmployeeModal";
 
 /* =========================
    FALLBACK REQUEST HELPERS
@@ -198,6 +199,10 @@ const HrAdminDashboard = () => {
   const [showAssignOnboardingModal, setShowAssignOnboardingModal] = useState(false);
 
   const [selectedEmp, setSelectedEmp] = useState(null);
+
+  // ✅ Edit Employee Modal State
+  const [showEditEmployeeModal, setShowEditEmployeeModal] = useState(false);
+  const [editingEmployee, setEditingEmployee] = useState(null);
 
   // Forms
   const [approveForm, setApproveForm] = useState({ basicSalary: "", joiningDate: "" });
@@ -466,6 +471,12 @@ const HrAdminDashboard = () => {
     } catch (e) {
       toast.error(getApiErrorMessage(e, "Delete failed"));
     }
+  };
+
+  // Open Edit Employee Modal
+  const openEditEmployee = (emp) => {
+    setEditingEmployee(emp);
+    setShowEditEmployeeModal(true);
   };
 
   // Leave action
@@ -1207,6 +1218,7 @@ const HrAdminDashboard = () => {
                         <td className="text-right">
                           <div className="action-row right-align">
                             {!n.isApproved ? (<button className="btn-icon approve" onClick={() => initiateApproval(emp)} title="Approve" type="button"><FaCheck /></button>) : null}
+                            <button className="btn-icon view" onClick={() => openEditEmployee(emp)} title="Edit" type="button"><FaEdit /></button>
                             <button className="btn-icon view" onClick={() => navigate(`/hr/view-employee/${emp._id}`)} title="View" type="button"><FaEye /></button>
                             <button className="btn-icon delete" onClick={() => handleDelete(emp._id, emp.name)} title="Delete" type="button"><FaTrash /></button>
                           </div>
@@ -1876,6 +1888,14 @@ const HrAdminDashboard = () => {
           </div>
         )
       }
+
+      {/* ✅ Edit Employee Modal (New) */}
+      <EditEmployeeModal
+        isOpen={showEditEmployeeModal}
+        onClose={() => setShowEditEmployeeModal(false)}
+        employee={editingEmployee}
+        onSuccess={() => fetchDashboardData(true)}
+      />
 
       {/* Approve Employee Modal */}
       {

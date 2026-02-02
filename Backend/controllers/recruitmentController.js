@@ -288,13 +288,16 @@ const createJob = async (req, res) => {
       passingYear: passingYear || "",
       salaryRange: salaryRange || "",
       contactEmail: contactEmail || "",
+      education: req.body.education || "", // ✅ NEW
+      deadline: req.body.deadline ? new Date(req.body.deadline) : null, // ✅ NEW
       skills: parsedSkills,
       status: "Open",
     });
 
     return res.status(201).json({ message: "Job created ✅", job });
   } catch (e) {
-    return res.status(500).json({ message: "Server error" });
+    console.error("createJob error:", e);
+    return res.status(500).json({ message: "Server error: " + e.message });
   }
 };
 
