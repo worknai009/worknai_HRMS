@@ -27,7 +27,7 @@ const Footer = () => {
           <p className="brand-desc">
             AI-powered biometric HRMS platform designed for
             secure attendance, workforce automation, and
-            payroll excellence across modern enterprises.
+            payroll excellence across modern enterprise.
           </p>
 
           <div className="social-links">
