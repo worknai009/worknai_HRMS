@@ -30,6 +30,7 @@ import {
   FaCamera,
 } from "react-icons/fa";
 import { useClientPagination } from "../../utils/useClientPagination";
+import Pagination from "../../components/Pagination";
 
 import {
   GoogleMap,
@@ -311,7 +312,6 @@ const TextCell = ({ label, value, onOpen }) => {
   );
 };
 
-import Pagination from "../../components/Pagination";
 
 const Attendance = () => {
   const { user, logout } = useAuth();
