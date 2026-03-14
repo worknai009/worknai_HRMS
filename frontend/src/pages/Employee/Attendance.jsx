@@ -8,6 +8,7 @@ import React, {
 import API from "../../services/api";
 import { toast } from "react-toastify";
 import { useAuth } from "../../context/AuthContext";
+import { useNavigate } from "react-router-dom";
 import {
   FaHistory,
   FaCoffee,
@@ -23,6 +24,10 @@ import {
   FaSpinner,
   FaChevronLeft,
   FaChevronRight,
+  FaArrowLeft,
+  FaSignOutAlt,
+  FaInfoCircle,
+  FaCamera,
 } from "react-icons/fa";
 import { useClientPagination } from "../../utils/useClientPagination";
 
@@ -79,7 +84,7 @@ const computeDistanceMeters = (a, b) => {
       );
       return Number.isFinite(d) ? d : null;
     }
-  } catch (e) {}
+  } catch (e) { }
   return haversineMeters(a, b);
 };
 
@@ -227,6 +232,21 @@ const getLocationLink = (row) => {
   return `https://www.google.com/maps?q=${lat},${lng}`;
 };
 
+const getImageUrl = (imgPath, name = "") => {
+  if (!imgPath) {
+    const fn = (name || "User").replace(/\s+/g, "+");
+    return `https://ui-avatars.com/api/?name=${fn}&background=50c8ff&color=03050c&bold=true&size=128`;
+  }
+  let finalPath = imgPath;
+  if (typeof imgPath === "object") {
+    finalPath = imgPath.url || imgPath.secure_url || imgPath.filepath || imgPath.path || "";
+  }
+  // Basic relative path resolver if getAssetUrl not available in this file
+  if (finalPath.startsWith('http')) return finalPath;
+  const backend = process.env.REACT_APP_SERVER_URL || "http://localhost:5000";
+  return `${backend}/${finalPath.replace(/^(\.\.\/|\.\/)+/, "")}`;
+};
+
 /* =========================
    STATUS / MODE NORMALIZER
 ========================= */
@@ -294,7 +314,8 @@ const TextCell = ({ label, value, onOpen }) => {
 import Pagination from "../../components/Pagination";
 
 const Attendance = () => {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
 
   const [history, setHistory] = useState([]);
   const [stats, setStats] = useState(null);
@@ -314,6 +335,10 @@ const Attendance = () => {
   const [gpsAccuracy, setGpsAccuracy] = useState(null);
   const [distanceMeters, setDistanceMeters] = useState(null);
   const [inside, setInside] = useState(true);
+
+  const fileInputRef = useRef(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [meUser, setMeUser] = useState(user);
 
   const mountedRef = useRef(true);
 
@@ -409,6 +434,37 @@ const Attendance = () => {
       if (!mountedRef.current) return;
       isRefresh ? setRefreshing(false) : setLoading(false);
     }
+  };
+
+  const handleFileChange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    try {
+      setUploadingImage(true);
+      const formData = new FormData();
+      formData.append("profileImage", file);
+
+      const res = await API.patch("/employee/profile-image", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+
+      toast.success(res.data?.message || "Profile image updated ✅");
+      
+      if (res.data?.profileImage) {
+        setMeUser(prev => ({ ...prev, profileImage: res.data.profileImage }));
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error(err.response?.data?.message || "Failed to upload image");
+    } finally {
+      setUploadingImage(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
+  const handleAvatarClick = () => {
+    if (fileInputRef.current) fileInputRef.current.click();
   };
 
   const openTextModal = (title, text) =>
@@ -713,6 +769,9 @@ const Attendance = () => {
     <div className="page slide-up">
       <header className="head">
         <div className="head-left">
+          <button className="btn-back" onClick={() => navigate("/employee/dashboard")} title="Back to Dashboard">
+            <FaArrowLeft />
+          </button>
           <div className="iconBox">
             <FaHistory />
           </div>
@@ -730,6 +789,28 @@ const Attendance = () => {
             onClick={() => loadAll(true)}
             disabled={refreshing}
           />
+
+          <div className="attAvatarWrap" onClick={handleAvatarClick} title="Change Profile Image">
+            {uploadingImage && <div className="attImgOverlay"><FaSpinner className="spin" /></div>}
+            <img 
+              src={getImageUrl(meUser?.profileImage, meUser?.name)} 
+              alt="Me" 
+              className="attAvatar"
+            />
+            <div className="attEditHint"><FaCamera /></div>
+          </div>
+
+          <input 
+            type="file" 
+            ref={fileInputRef} 
+            style={{ display: 'none' }} 
+            accept="image/*"
+            onChange={handleFileChange}
+          />
+
+          <button className="btn-logout" onClick={() => logout("/")} title="Logout">
+            <FaSignOutAlt /> Logout
+          </button>
         </div>
       </header>
 
@@ -801,595 +882,465 @@ const Attendance = () => {
             </div>
           )}
 
-          {isLoaded && GOOGLE_MAPS_API_KEY ? (
+          {isLoaded ? (
             <GoogleMap
-              mapContainerStyle={{
-                width: "100%",
-                height: "220px",
-                borderRadius: "16px",
-              }}
-              center={currentPos || officePos || { lat: 20.5937, lng: 78.9629 }}
-              zoom={currentPos || officePos ? 16 : 5}
-              options={{
-                streetViewControl: false,
-                fullscreenControl: false,
-                mapTypeControl: false,
-                clickableIcons: false,
-              }}
+              mapContainerClassName="map"
+              center={currentPos || officePos || { lat: 19.076, lng: 72.877 }}
+              zoom={15}
+              options={{ disableDefaultUI: true, gestureHandling: "greedy" }}
             >
+              {officePos && <Circle center={officePos} options={circleOptions} />}
               {officePos && (
-                <>
-                  <Marker position={officePos} />
-                  <Circle center={officePos} options={circleOptions} />
-                </>
+                <Marker
+                  position={officePos}
+                  label={{
+                    text: "Office",
+                    color: "white",
+                    fontWeight: "bold",
+                    className: "mapLabel",
+                  }}
+                />
               )}
-              {currentPos && <Marker position={currentPos} />}
+              {currentPos && (
+                <Marker
+                  position={currentPos}
+                  icon="https://maps.google.com/mapfiles/ms/icons/blue-dot.png"
+                />
+              )}
             </GoogleMap>
           ) : (
-            <div className="mapFallback">
-              {GOOGLE_MAPS_API_KEY
-                ? "Loading map…"
-                : "Google Maps not available (missing key). GPS still works."}
+            <div className="mapPlaceholder">
+              <FaSpinner className="spin" /> Initializing Map…
             </div>
           )}
         </div>
       </section>
 
-      <section className="breakCard">
-        <div className="bkLeft">
-          <h3>Break Management</h3>
-          <p>
-            Accurate net work hours ke liye break start/end zaroor mark karein.
-          </p>
-          {disableBreakButtons.reason ? (
-            <div className="hint">{disableBreakButtons.reason}</div>
-          ) : null}
-        </div>
+      <div className="mainGrid">
+        <section className="tablePanel">
+          <div className="panelHead">
+            <div className="pLeft">
+              <div className="total">
+                Results: <b>{filteredRows.length}</b>
+              </div>
+              <div className="filters">
+                <div className="searchBox">
+                  <FaSearch className="sIc" />
+                  <input
+                    placeholder="Search records…"
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                  />
+                </div>
+                <button
+                  className={`toggleBtn ${onlyToday ? "active" : ""}`}
+                  onClick={() => setOnlyToday(!onlyToday)}
+                >
+                  {onlyToday ? "All History" : "Today Only"}
+                </button>
+              </div>
+            </div>
+          </div>
 
-        <div className="bkBtns">
-          <MiniButton
-            icon={<FaCoffee />}
-            text="Start Break"
-            variant="warning"
-            onClick={() => handleBreak("start")}
-            disabled={disableBreakButtons.start}
-          />
-          <MiniButton
-            icon={<FaPlay />}
-            text="Resume Work"
-            variant="success"
-            onClick={() => handleBreak("end")}
-            disabled={disableBreakButtons.end}
-          />
-        </div>
-      </section>
+          <div className="tableWrap shadow-nice">
+            <table className="table desktop-only">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>In</th>
+                  <th>Out</th>
+                  <th>Hours</th>
+                  <th>Report In</th>
+                  <th>Report Out</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {loading ? (
+                  <tr>
+                    <td colSpan={7} className="empty">
+                      <FaSpinner className="spin" /> Syncing with server…
+                    </td>
+                  </tr>
+                ) : paginatedItems.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="empty">
+                      <FaExclamationCircle /> No matching records.
+                    </td>
+                  </tr>
+                ) : (
+                  paginatedItems.map((r) => {
+                    const morning = getMorningReport(r);
+                    const evening = getDailyReport(r);
+                    return (
+                      <tr key={r._id}>
+                        <td>
+                          <b>{formatYMD(r.date)}</b>
+                        </td>
+                        <td className="green text-center">
+                          {formatTime(r.punchInTime)}
+                        </td>
+                        <td className="red text-center">
+                          {formatTime(r.punchOutTime)}
+                        </td>
+                        <td className="text-center">
+                          {r.netWorkHours || r.netHours || "--"}
+                        </td>
+                        <td>
+                          <TextCell
+                            label="Morning Plan"
+                            value={morning}
+                            onOpen={openTextModal}
+                          />
+                        </td>
+                        <td>
+                          <TextCell
+                            label="Daily Report"
+                            value={evening}
+                            onOpen={openTextModal}
+                          />
+                        </td>
+                        <td>
+                          <StatusPill row={r} />
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
 
-      <section className="bar">
-        <div className="search">
-          <FaSearch className="sIc" />
-          <input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search by date / status / reports…"
-          />
-        </div>
-
-        <button
-          type="button"
-          className={`toggle ${onlyToday ? "on" : ""}`}
-          onClick={() => setOnlyToday((v) => !v)}
-        >
-          {onlyToday ? "Showing: Today" : "Filter: Today"}
-        </button>
-
-        <div className="count">{filteredRows.length} records</div>
-      </section>
-
-      <section className="tableCard">
-        <div className="tableWrap">
-          <table className="tbl">
-            <thead>
-              <tr>
-                <th>Date</th>
-                <th>Punch In</th>
-                <th>Punch Out</th>
-                <th>Net Hours</th>
-                <th>Status</th>
-                <th>Morning Plan</th>
-                <th>Daily Report</th>
-                <th>Location</th>
-              </tr>
-            </thead>
-
-            <tbody>
+            {/* Mobile Cards */}
+            <div className="mobile-only">
               {loading ? (
-                <tr>
-                  <td colSpan="8" className="msg">
-                    Fetching your logs…
-                  </td>
-                </tr>
+                <div className="empty">
+                  <FaSpinner className="spin" /> Syncing…
+                </div>
               ) : paginatedItems.length === 0 ? (
-                <tr>
-                  <td colSpan="8" className="msg">
-                    <FaExclamationCircle /> No attendance records found.
-                  </td>
-                </tr>
+                <div className="empty">No records found.</div>
               ) : (
-                paginatedItems.map((row) => {
-                  const net = toSafeNumber(row?.netWorkHours, 0);
-                  const locLink = getLocationLink(row);
-
-                  return (
-                    <tr key={row._id} className="tr">
-                      <td className="date">
-                        <FaCalendarAlt className="dim" />
-                        <span>{formatYMD(row?.date)}</span>
-                      </td>
-
-                      <td className="time in">
-                        <FaClock />
-                        {formatTime(row?.punchInTime)}
-                      </td>
-
-                      <td className="time out">
-                        <FaClock />
-                        {formatTime(row?.punchOutTime)}
-                      </td>
-
-                      <td className="hours">
-                        <strong>{net ? net.toFixed(2) : "0.00"}</strong>{" "}
-                        <small>hrs</small>
-                      </td>
-
-                      <td>
-                        <StatusPill row={row} />
-                      </td>
-
-                      <td>
-                        <TextCell
-                          label="Morning Plan"
-                          value={getMorningReport(row)}
-                          onOpen={openTextModal}
-                        />
-                      </td>
-
-                      <td>
-                        <TextCell
-                          label="Daily Report"
-                          value={getDailyReport(row)}
-                          onOpen={openTextModal}
-                        />
-                      </td>
-
-                      <td>
-                        {locLink ? (
-                          <a
-                            className="mapLink"
-                            href={locLink}
-                            target="_blank"
-                            rel="noreferrer"
-                          >
-                            <FaMapMarkerAlt /> Map
-                          </a>
-                        ) : (
-                          <span className="muted">--</span>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })
+                <div className="mList">
+                  {paginatedItems.map((r) => (
+                    <div key={r._id} className="mCard">
+                      <div className="mTop">
+                        <span className="mDate">{formatYMD(r.date)}</span>
+                        <StatusPill row={r} />
+                      </div>
+                      <div className="mTimes">
+                        <div className="mTime green">
+                          <label>In:</label> {formatTime(r.punchInTime)}
+                        </div>
+                        <div className="mTime red">
+                          <label>Out:</label> {formatTime(r.punchOutTime)}
+                        </div>
+                        <div className="mTime">
+                          <label>Net:</label>
+                          <b className="text-primary">
+                            {String(r.date) === todayYMD && !r.punchOutTime ? "Working..." : (r.netWorkHours || r.netHours || "--")}
+                          </b>
+                        </div>
+                      </div>
+                      <div className="mReports">
+                        <div className="mR">
+                          <label>Morning:</label>{" "}
+                          {clampText(getMorningReport(r), 30)}
+                        </div>
+                        <div className="mR">
+                          <label>Daily:</label> {clampText(getDailyReport(r), 30)}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               )}
-            </tbody>
-          </table>
+            </div>
+          </div>
 
-          <div style={{ padding: "10px" }}>
+          <div className="tableFoot">
             <Pagination pager={pager} />
           </div>
-        </div>
-      </section>
+        </section>
 
-      {modal.open ? (
-        <div className="overlay" role="dialog" aria-modal="true">
-          <div className="modal">
-            <div className="mHead">
-              <div>
-                <div className="mTitle">{modal.title}</div>
-                <div className="mSub">Full text view</div>
+        <section className="sidePanel">
+          <div className="breakCard">
+            <h3>Break Management</h3>
+            <p>Track your break durations during the shift.</p>
+
+            <div className="breakStats">
+              <div className="bStat">
+                <FaCoffee />
+                <div>
+                  <div className="bVal">30m</div>
+                  <div className="bLab">Used</div>
+                </div>
               </div>
-              <button className="xbtn" type="button" onClick={closeModal}>
+              <div className="bStat">
+                <FaClock />
+                <div>
+                  <div className="bVal">30m</div>
+                  <div className="bLab">Left</div>
+                </div>
+              </div>
+            </div>
+
+            <div className="breakActions">
+              <button
+                className="btn btn-outline"
+                disabled={disableBreakButtons.start}
+                onClick={() => handleBreak("start")}
+              >
+                Start Break
+              </button>
+              <button
+                className="btn btn-solid"
+                disabled={disableBreakButtons.end}
+                onClick={() => handleBreak("end")}
+              >
+                End Break
+              </button>
+            </div>
+            {disableBreakButtons.reason && (
+              <div className="breakHint">
+                <FaInfoCircle /> {disableBreakButtons.reason}
+              </div>
+            )}
+          </div>
+
+          <div className="helpCard">
+            <h4>Quick FAQ</h4>
+            <ul>
+              <li>Location locked? Try refreshing your GPS.</li>
+              <li>Missing logs? Sync with backend using Refresh.</li>
+              <li>Incorrect status? Contact HR for manual fix.</li>
+            </ul>
+          </div>
+        </section>
+      </div>
+
+      {modal.open && (
+        <div className="modalOverlay" onClick={closeModal}>
+          <div className="modalBox zoom-in" onClick={(e) => e.stopPropagation()}>
+            <div className="mHead">
+              <h3>{modal.title}</h3>
+              <button onClick={closeModal}>
                 <FaTimes />
               </button>
             </div>
-
-            <div className="mBody">
-              <pre className="pre">{modal.text || "--"}</pre>
-            </div>
-
+            <div className="mBody">{modal.text}</div>
             <div className="mFoot">
-              <button
-                className="btn btn-solid"
-                type="button"
-                onClick={closeModal}
-              >
+              <button onClick={closeModal} className="btn btn-solid">
                 Close
               </button>
             </div>
           </div>
         </div>
-      ) : null}
+      )}
 
       <style>{`
-        :root{
-          --bg:#f8fafc;
-          --card:#ffffff;
-          --text:#0f172a;
-          --muted:#64748b;
-          --border:#e2e8f0;
-          --brand:#10b981;
-          --brand2:#4f46e5;
-          --danger:#ef4444;
-          --warn:#f59e0b;
-          --ok:#10b981;
-          --shadow: 0 14px 35px rgba(2,6,23,0.06);
+        :root {
+          --bg: #03050c;
+          --card: rgba(13, 18, 40, 0.65);
+          --text: #ffffff;
+          --muted: rgba(255, 255, 255, 0.6);
+          --border: rgba(80, 200, 255, 0.12);
+          --primary: #50c8ff;
+          --grad-tri: linear-gradient(90deg, #50c8ff 0%, #a78bfa 55%, #e879f9 100%);
         }
 
-        .page{
-          padding: 22px;
-          max-width: 1280px;
-          margin: 0 auto;
-          font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial;
-          color: var(--text);
+        .page { padding: 24px; max-width: 1400px; margin: 0 auto; min-height: 100vh; background: var(--bg); color: var(--text); font-family: 'Plus Jakarta Sans', Inter, sans-serif;
+           background-image: radial-gradient(circle at 5% 5%, rgba(80, 200, 255, 0.04) 0%, transparent 30%);
         }
+        
+        .mobile-only { display: none; }
+        .desktop-only { display: block; }
 
-        .head{
-          display:flex; justify-content:space-between; align-items:flex-end;
-          gap: 14px; margin-bottom: 16px;
-        }
-        .head-left{ display:flex; gap:14px; align-items:center; }
-        .iconBox{
-          width:56px; height:56px; border-radius:18px;
-          background: linear-gradient(135deg, rgba(16,185,129,0.15), rgba(79,70,229,0.10));
-          border: 1px solid rgba(226,232,240,0.9);
-          display:flex; align-items:center; justify-content:center;
-          font-size: 22px; color: var(--brand);
-          box-shadow: 0 10px 20px rgba(16,185,129,0.06);
-        }
-        .head h1{ margin:0; font-size: 22px; letter-spacing:-0.3px; }
-        .head p{ margin:4px 0 0; color: var(--muted); font-weight: 600; font-size: 13px; }
+        /* HEADER */
+        .head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; border-bottom: 1px solid var(--border); padding-bottom: 20px; flex-wrap: wrap; gap: 20px; }
+        .head-left { display: flex; gap: 16px; align-items: center; }
+        .iconBox { width: 50px; height: 50px; background: rgba(80, 200, 255, 0.1); border-radius: 14px; display: grid; place-items: center; font-size: 22px; color: var(--primary); }
+        .head-left h1 { margin: 0; font-size: 1.5rem; font-weight: 850; letter-spacing: -0.5px; background: var(--grad-tri); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .head-left p { margin: 4px 0 0; font-size: 0.9rem; color: var(--muted); font-weight: 600; }
+        .head-right { display: flex; gap: 12px; align-items: center; }
+        
+        .btn-back { width: 42px; height: 42px; border-radius: 12px; border: 1px solid var(--border); background: rgba(255,255,255,0.03); color: white; cursor: pointer; transition: 0.3s; display: grid; place-items: center; }
+        .btn-back:hover { border-color: var(--primary); color: var(--primary); background: rgba(80, 200, 255, 0.1); }
 
-        .cards{
-          display:grid;
-          grid-template-columns: repeat(4, minmax(0, 1fr));
-          gap: 12px;
-          margin-bottom: 14px;
-        }
-        .card{
-          background: var(--card);
-          border: 1px solid var(--border);
-          border-radius: 18px;
-          padding: 14px;
-          box-shadow: 0 8px 18px rgba(2,6,23,0.04);
-        }
-        .cLabel{ font-size: 12px; color: var(--muted); font-weight: 800; text-transform: uppercase; letter-spacing: .8px; }
-        .cVal{ font-size: 22px; font-weight: 950; margin-top: 8px; }
-        .c1{ border-color: rgba(16,185,129,0.22); }
-        .c2{ border-color: rgba(245,158,11,0.22); }
-        .c3{ border-color: rgba(79,70,229,0.22); }
-        .c4{ border-color: rgba(239,68,68,0.18); }
+        .btn-logout { background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2); color: #ef4444; padding: 10px 18px; border-radius: 12px; font-weight: 800; cursor: pointer; display: flex; align-items: center; gap: 10px; transition: 0.3s; }
+        .btn-logout:hover { background: #ef4444; color: white; }
 
-        .locCard{
-          background: var(--card);
-          border: 1px solid var(--border);
-          border-radius: 22px;
-          box-shadow: var(--shadow);
-          padding: 14px;
-          margin-bottom: 14px;
-          overflow:hidden;
-        }
-        .locTop{
-          display:flex; justify-content:space-between; gap:12px;
-          flex-wrap:wrap; align-items:flex-start;
-          margin-bottom: 10px;
-        }
-        .locTitle{ font-weight: 950; display:flex; align-items:center; gap:10px; }
-        .locSub{ margin-top: 4px; color: var(--muted); font-weight: 800; font-size: 12px; }
-        .locMetaRow{
-          display:flex; gap:10px; flex-wrap:wrap; align-items:center;
-          margin-bottom: 10px;
-        }
-        .badge{
-          padding: 7px 10px;
-          border-radius: 999px;
-          font-weight: 950;
-          font-size: 11px;
-          border:1px solid var(--border);
-          background:#f8fafc;
-        }
-        .badge.ok{ background:#dcfce7; border-color:#bbf7d0; color:#065f46; }
-        .badge.bad{ background:#fee2e2; border-color:#fecaca; color:#991b1b; }
-        .badge.neutral{ background:#e0f2fe; border-color:#bae6fd; color:#075985; }
-        .meta{ color: var(--muted); font-weight: 900; font-size: 12px; }
-        .mapWrap{ border-radius: 16px; overflow:hidden; border:1px solid rgba(226,232,240,0.9); }
-        .mapFallback{ padding: 14px; color: var(--muted); font-weight: 900; background:#f8fafc; }
-        .warnBox{ padding: 10px 12px; background:#fff7ed; color:#9a3412; font-weight: 950; border-bottom:1px solid #fed7aa; font-size: 12px; }
-
-        .breakCard{
-          background: linear-gradient(135deg, rgba(79,70,229,0.10), rgba(16,185,129,0.10));
-          border: 1px solid rgba(199,210,254,0.8);
-          border-radius: 22px;
-          padding: 18px;
-          display:flex;
-          justify-content: space-between;
-          align-items: center;
-          gap: 14px;
-          margin-bottom: 14px;
-          box-shadow: 0 12px 22px rgba(79,70,229,0.06);
-          flex-wrap: wrap;
-        }
-        .bkLeft h3{ margin:0; font-size: 16px; font-weight: 950; }
-        .bkLeft p{ margin:6px 0 0; color: rgba(15,23,42,0.72); font-weight: 650; }
-        .hint{ margin-top: 10px; font-size: 12px; color: rgba(15,23,42,0.70); font-weight: 800; background: rgba(255,255,255,0.65); padding: 6px 10px; border-radius: 12px; width: fit-content; }
-        .bkBtns{ display:flex; gap: 10px; }
-
-        .bar{
-          display:flex; gap: 10px; align-items:center; justify-content:space-between;
-          flex-wrap: wrap;
-          margin-bottom: 12px;
-        }
-        .search{
-          flex: 1;
-          min-width: 240px;
-          display:flex; align-items:center; gap: 10px;
-          background: #fff;
-          border: 1px solid var(--border);
-          border-radius: 14px;
-          padding: 10px 12px;
-          box-shadow: 0 8px 18px rgba(2,6,23,0.03);
-        }
-        .sIc{ color: var(--muted); }
-        .search input{
-          width: 100%;
-          border:none; outline:none;
-          font-weight: 800;
-          color: var(--text);
-          background: transparent;
-        }
-
-        .toggle{
-          border: 1px solid var(--border);
-          background: #fff;
-          padding: 10px 12px;
-          border-radius: 14px;
-          cursor: pointer;
-          font-weight: 900;
-          color: var(--muted);
-        }
-        .toggle.on{
-          border-color: rgba(16,185,129,0.4);
-          color: #065f46;
-          background: #ecfdf5;
-        }
-        .count{ font-weight: 900; color: var(--muted); font-size: 13px; }
-
-        .tableCard{
-          background: var(--card);
-          border: 1px solid var(--border);
-          border-radius: 22px;
-          box-shadow: var(--shadow);
-          overflow: hidden;
-        }
-        .tableWrap{ overflow-x: auto; -webkit-overflow-scrolling: touch; }
-        .tbl{
-          width: 100%;
-          border-collapse: collapse;
-          min-width: 980px;
-        }
-        .tbl th{
-          text-align: left;
-          padding: 16px 16px;
-          background: rgba(248,250,252,0.95);
-          border-bottom: 1px solid rgba(226,232,240,0.9);
-          font-size: 12px;
-          color: var(--muted);
-          text-transform: uppercase;
-          letter-spacing: .9px;
-          font-weight: 950;
-          white-space: nowrap;
-        }
-        .tbl td{
-          padding: 14px 16px;
-          border-bottom: 1px solid rgba(241,245,249,0.95);
-          font-weight: 650;
-          font-size: 13px;
-          vertical-align: middle;
-        }
-        .tr:hover{ background: rgba(248,250,252,0.70); }
-        .msg{ padding: 36px !important; text-align:center; color: var(--muted); font-weight: 900; }
-
-        .date{ display:flex; align-items:center; gap: 10px; font-weight: 950; }
-        .dim{ color: rgba(79,70,229,0.65); }
-        .time{ display:inline-flex; align-items:center; gap: 8px; font-weight: 900; }
-        .time.in{ color: #059669; }
-        .time.out{ color: #ef4444; }
-        .hours strong{ font-size: 14px; }
-        .hours small{ color: var(--muted); font-weight: 900; }
-
-        .muted{ color: var(--muted); font-weight: 800; }
-
-        .pill{
-          display:inline-flex; align-items:center; gap: 6px;
-          border-radius: 999px;
-          padding: 6px 10px;
-          font-size: 11px;
-          font-weight: 950;
-          text-transform: uppercase;
-          letter-spacing: .5px;
-          border: 1px solid rgba(226,232,240,0.9);
-          background: #f8fafc;
-          color: #0f172a;
-          white-space: nowrap;
-        }
-        .pill-ic{ font-size: 12px; }
-
-        .pill-present, .pill-completed{
-          background: #dcfce7; color: #065f46; border-color: #bbf7d0;
-        }
-        .pill-halfday{
-          background: #fef3c7; color: #92400e; border-color: #fde68a;
-        }
-        .pill-on-break{
-          background: #e0f2fe; color: #075985; border-color: #bae6fd;
-        }
-        .pill-absent{
-          background: #fee2e2; color: #991b1b; border-color: #fecaca;
-        }
-
-        /* ✅ Added (same palette) */
-        .pill-wfh{
-          background:#e0f2fe; color:#075985; border-color:#bae6fd;
-        }
-        .pill-paid-leave{
-          background:#dcfce7; color:#065f46; border-color:#bbf7d0;
-        }
-        .pill-unpaid-leave{
-          background:#fee2e2; color:#991b1b; border-color:#fecaca;
-        }
-        .pill-holiday{
-          background:#f1f5f9; color:#0f172a; border-color:#e2e8f0;
-        }
-
-        .textcell{ display:flex; align-items:center; justify-content:space-between; gap: 10px; }
-        .textcell-main{ color: rgba(15,23,42,0.88); font-weight: 800; }
-        .linkbtn{
-          border:none; background: transparent;
-          color: var(--brand2);
-          font-weight: 950;
-          cursor: pointer;
-          padding: 0;
-          white-space: nowrap;
-        }
-
-        .mapLink{
-          display:inline-flex; align-items:center; gap: 8px;
-          text-decoration: none;
-          font-weight: 950;
-          color: #0f172a;
-          background: #f1f5f9;
-          border: 1px solid rgba(226,232,240,0.9);
-          padding: 7px 10px;
+        .attAvatarWrap {
+          width: 42px; height: 42px;
           border-radius: 12px;
-          white-space: nowrap;
-        }
-        .mapLink:hover{ filter: brightness(0.98); }
-
-        .btn{
-          border:none;
-          border-radius: 14px;
-          padding: 10px 12px;
-          font-weight: 950;
-          cursor:pointer;
-          display:inline-flex; align-items:center; gap: 10px;
-          white-space: nowrap;
-        }
-        .btn:disabled{ opacity: 0.6; cursor: not-allowed; }
-        .btn-ghost{
-          background: #fff;
           border: 1px solid var(--border);
-          color: var(--text);
-          box-shadow: 0 8px 18px rgba(2,6,23,0.03);
-        }
-        .btn-solid{
-          background: var(--brand);
-          color: #fff;
-          box-shadow: 0 12px 22px rgba(16,185,129,0.15);
-        }
-        .btn-warning{
-          background: var(--warn);
-          color:#fff;
-          box-shadow: 0 12px 22px rgba(245,158,11,0.18);
-        }
-        .btn-success{
-          background: var(--ok);
-          color:#fff;
-          box-shadow: 0 12px 22px rgba(16,185,129,0.18);
-        }
-        .btn-ic{ display:inline-flex; }
-
-        .overlay{
-          position: fixed; inset:0;
-          background: rgba(2,6,23,0.55);
-          backdrop-filter: blur(5px);
-          display:grid; place-items:center;
-          z-index: 999;
-          padding: 14px;
-        }
-        .modal{
-          width: 100%;
-          max-width: 720px;
-          background: #fff;
-          border-radius: 22px;
-          border: 1px solid rgba(226,232,240,0.9);
-          box-shadow: 0 30px 70px rgba(0,0,0,0.20);
           overflow: hidden;
-        }
-        .mHead{
-          display:flex; justify-content:space-between; align-items:flex-start;
-          padding: 16px 16px;
-          border-bottom: 1px solid rgba(241,245,249,0.95);
-          background: rgba(248,250,252,0.9);
-        }
-        .mTitle{ font-weight: 950; font-size: 16px; }
-        .mSub{ margin-top: 4px; color: var(--muted); font-weight: 800; font-size: 12px; }
-        .xbtn{
-          border:none;
-          background: #fff;
-          border: 1px solid rgba(226,232,240,0.9);
-          border-radius: 12px;
-          width: 40px; height: 40px;
-          display:grid; place-items:center;
+          position: relative;
           cursor: pointer;
+          transition: 0.3s;
         }
-        .mBody{ padding: 16px; }
-        .pre{
-          margin: 0;
-          white-space: pre-wrap;
-          word-break: break-word;
-          background: #0b1220;
-          color: #e5e7eb;
-          padding: 14px;
-          border-radius: 16px;
-          font-size: 13px;
-          line-height: 1.5;
+        .attAvatarWrap:hover { border-color: var(--primary); }
+        .attAvatar { width: 100%; height: 100%; object-fit: cover; transition: 0.3s; }
+        .attAvatarWrap:hover .attAvatar { filter: brightness(0.6); }
+        .attEditHint { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: #fff; opacity: 0; transition: 0.3s; pointer-events: none; font-size: 14px; }
+        .attAvatarWrap:hover .attEditHint { opacity: 1; }
+        .attImgOverlay { position: absolute; inset: 0; background: rgba(0,0,0,0.5); display: grid; place-items: center; z-index: 5; }
+
+        /* CARDS */
+        .cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+        .card { background: var(--card); border: 1px solid var(--border); border-radius: 20px; padding: 20px; backdrop-filter: blur(10px); transition: 0.3s; }
+        .card:hover { border-color: var(--primary); transform: translateY(-3px); }
+        .card.c1 { border-left: 4px solid #10b981; }
+        .card.c2 { border-left: 4px solid #f59e0b; }
+        .card.c3 { border-left: 4px solid #3b82f6; }
+        .card.c4 { border-left: 4px solid #ef4444; }
+        .cLabel { font-size: 0.75rem; color: var(--muted); font-weight: 800; text-transform: uppercase; letter-spacing: 1px; }
+        .cVal { font-size: 1.8rem; font-weight: 900; margin-top: 6px; }
+
+        /* LOC CARD */
+        .locCard { background: var(--card); border: 1px solid var(--border); border-radius: 24px; padding: 24px; margin-bottom: 24px; }
+        .locTop { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; gap: 20px; flex-wrap: wrap; }
+        .locTitle { font-size: 1.1rem; font-weight: 800; display: flex; align-items: center; gap: 10px; color: #fff; }
+        .locSub { margin-top: 4px; font-size: 0.85rem; color: var(--muted); font-weight: 600; }
+        .locMetaRow { display: flex; gap: 20px; align-items: center; margin-bottom: 16px; flex-wrap: wrap; }
+        .badge { padding: 6px 14px; border-radius: 50px; font-weight: 800; font-size: 0.8rem; }
+        .badge.ok { background: rgba(16, 185, 129, 0.15); color: #10b981; }
+        .badge.bad { background: rgba(239, 68, 68, 0.15); color: #ef4444; }
+        .meta { font-size: 0.85rem; color: var(--muted); }
+        .meta b { color: #fff; }
+
+        .workingTag {
+          color: #10b981;
+          font-size: 0.7rem;
+          background: rgba(16, 185, 129, 0.1);
+          padding: 2px 8px;
+          border-radius: 6px;
+          border: 1px solid rgba(16, 185, 129, 0.2);
+          animation: pulse-small 2s infinite;
         }
-        .mFoot{
-          display:flex; justify-content:flex-end;
-          gap: 10px;
-          padding: 14px 16px;
-          border-top: 1px solid rgba(241,245,249,0.95);
+        @keyframes pulse-small {
+          0% { opacity: 0.8; }
+          50% { opacity: 1; text-shadow: 0 0 5px rgba(16, 185, 129, 0.3); }
+          100% { opacity: 0.8; }
         }
 
-        .spin{ animation: spin 1s linear infinite; }
-        @keyframes spin{ to{ transform: rotate(360deg); } }
+        .mapWrap { height: 320px; border-radius: 16px; overflow: hidden; border: 1px solid var(--border); position: relative; }
+        .map { width: 100%; height: 100%; }
+        .warnBox { position: absolute; inset: 0; background: rgba(239, 68, 68, 0.1); display: grid; place-items: center; color: #f87171; padding: 20px; text-align: center; font-weight: 600; z-index: 10; backdrop-filter: blur(4px); }
+        .mapPlaceholder { position: absolute; inset: 0; background: rgba(0,0,0,0.5); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; color: var(--muted); }
 
-        @media (max-width: 980px){
-          .cards{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
-          .bkBtns{ width: 100%; }
-          .btn{ width: 100%; justify-content:center; }
-          .bkBtns{ display:grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        }
-        @media (max-width: 520px){
-          .page{ padding: 14px; }
-          .head{ align-items: flex-start; flex-direction: column; }
-          .head-right{ width: 100%; }
-          .bkBtns{ grid-template-columns: 1fr; }
-          .toggle{ width: 100%; }
-          .count{ width: 100%; text-align: right; }
+        /* MAIN GRID */
+        .mainGrid { display: grid; grid-template-columns: 1fr 340px; gap: 24px; align-items: start; }
+        .tablePanel { background: var(--card); border: 1px solid var(--border); border-radius: 24px; overflow: hidden; }
+        .panelHead { padding: 20px; border-bottom: 1px solid var(--border); background: rgba(255,255,255,0.01); }
+        .pLeft { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; }
+        .total { font-size: 0.9rem; color: var(--muted); font-weight: 600; }
+        .filters { display: flex; gap: 12px; align-items: center; }
+        .searchBox { position: relative; display: flex; align-items: center; background: rgba(255,255,255,0.03); border: 1px solid var(--border); border-radius: 12px; padding: 8px 12px; gap: 10px; width: 240px; transition: 0.3s; }
+        .searchBox:focus-within { border-color: var(--primary); background: rgba(255,255,255,0.06); }
+        .searchBox input { background: none; border: none; outline: none; color: #fff; width: 100%; font-size: 0.9rem; font-weight: 600; }
+        .sIc { color: var(--muted); font-size: 14px; }
+        .toggleBtn { padding: 8px 16px; border-radius: 10px; border: 1px solid var(--border); background: none; color: #fff; font-weight: 700; cursor: pointer; transition: 0.3s; font-size: 0.85rem; }
+        .toggleBtn.active { background: var(--primary); color: #03050c; border-color: var(--primary); }
+
+        .tableWrap { overflow-x: auto; }
+        .table { width: 100%; border-collapse: collapse; }
+        .table th { background: rgba(255,255,255,0.03); padding: 16px; text-align: left; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); font-weight: 800; }
+        .table td { padding: 16px; border-bottom: 1px solid var(--border); font-size: 13.5px; }
+        .table tr:last-child td { border-bottom: none; }
+        .table tr:hover { background: rgba(255,255,255,0.02); }
+
+        .textcell { min-width: 140px; }
+        .textcell-main { color: var(--muted); font-size: 12px; line-height: 1.4; }
+        .linkbtn { background: none; border: none; color: var(--primary); padding: 4px 0; font-size: 11px; font-weight: 800; cursor: pointer; text-decoration: underline; }
+
+        .pill { padding: 4px 10px; border-radius: 50px; font-size: 11px; font-weight: 900; display: inline-flex; align-items: center; gap: 5px; text-transform: uppercase; letter-spacing: 0.5px; background: rgba(255,255,255,0.05); }
+        .pill-present { color: #10b981; background: rgba(16, 185, 129, 0.1); }
+        .pill-absent { color: #ef4444; background: rgba(239, 68, 68, 0.1); }
+        .pill-paid-leave { color: #3b82f6; background: rgba(59, 130, 246, 0.1); }
+        .pill-unpaid-leave { color: #f59e0b; background: rgba(245, 158, 11, 0.1); }
+        .pill-not-started { color: var(--muted); }
+
+        .btn { padding: 10px 18px; border-radius: 12px; font-weight: 800; cursor: pointer; transition: 0.3s; display: inline-flex; align-items: center; gap: 8px; font-size: 0.9rem; }
+        .btn-solid { background: var(--primary); border: none; color: #03050c; }
+        .btn-solid:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(80, 200, 255, 0.3); }
+        .btn-ghost { background: rgba(255,255,255,0.05); border: 1px solid var(--border); color: #fff; }
+        .btn-ghost:hover:not(:disabled) { background: rgba(255,255,255,0.1); border-color: var(--primary); }
+        .btn-outline { background: none; border: 1px solid var(--border); color: #fff; }
+        .btn-outline:hover:not(:disabled) { border-color: var(--primary); color: var(--primary); }
+        .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+        .spin { animation: spin 1s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* SIDE PANEL */
+        .sidePanel { display: grid; gap: 24px; }
+        .breakCard { background: var(--card); border: 1px solid var(--border); border-radius: 24px; padding: 24px; }
+        .breakCard h3 { margin: 0; font-size: 1.2rem; }
+        .breakCard p { font-size: 0.85rem; color: var(--muted); margin: 6px 0 20px; font-weight: 600; }
+        .breakStats { display: flex; gap: 20px; margin-bottom: 24px; }
+        .bStat { flex: 1; display: flex; align-items: center; gap: 12px; background: rgba(255,255,255,0.03); padding: 12px; border-radius: 16px; border: 1px solid var(--border); }
+        .bStat svg { font-size: 1.2rem; color: var(--primary); opacity: 0.7; }
+        .bVal { font-size: 1.1rem; font-weight: 900; }
+        .bLab { font-size: 10px; color: var(--muted); font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; }
+        .breakActions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .breakHint { margin-top: 16px; font-size: 11px; color: #f59e0b; font-weight: 700; display: flex; align-items: center; gap: 6px; }
+
+        .helpCard { background: rgba(80, 200, 255, 0.03); border: 1px dashed rgba(80, 200, 255, 0.2); border-radius: 20px; padding: 16px; }
+        .helpCard h4 { margin: 0; font-size: 0.9rem; color: var(--primary); }
+        .helpCard ul { margin: 10px 0 0; padding-left: 20px; font-size: 12px; color: var(--muted); font-weight: 600; }
+        .helpCard li { margin-bottom: 8px; }
+
+        /* MODAL */
+        .modalOverlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); display: flex; align-items: center; justify-content: center; z-index: 2000; backdrop-filter: blur(8px); padding: 20px; }
+        .modalBox { background: #0a0f1e; border: 1px solid var(--border); border-radius: 24px; width: 100%; max-width: 480px; box-shadow: 0 30px 60px rgba(0,0,0,0.5); }
+        .mHead { display: flex; justify-content: space-between; align-items: center; padding: 20px 24px; border-bottom: 1px solid var(--border); }
+        .mHead h3 { margin: 0; font-size: 1.2rem; }
+        .mHead button { background: none; border: none; color: var(--muted); font-size: 1.4rem; cursor: pointer; }
+        .mBody { padding: 24px; font-size: 0.95rem; line-height: 1.6; color: rgba(255,255,255,0.8); white-space: pre-wrap; max-height: 400px; overflow-y: auto; }
+        .mFoot { padding: 20px 24px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; }
+
+        .zoom-in { animation: zoomIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); }
+        @keyframes zoomIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+        /* RESPONSIVE */
+        @media (max-width: 1200px) { 
+          .mainGrid { grid-template-columns: 1fr; } 
+          .sidePanel { order: 1; } 
+          .cards { grid-template-columns: repeat(2, 1fr); } 
         }
 
-        .slide-up{ animation: slideUp .45s ease-out; }
-        @keyframes slideUp{
-          from{ opacity:0; transform: translateY(16px); }
-          to{ opacity:1; transform: translateY(0); }
+        @media (max-width: 768px) {
+          .page { padding: 16px; }
+          .head { gap: 12px; margin-bottom: 20px; }
+          .head-left h1 { font-size: 1.25rem; }
+          .head-right { width: 100%; justify-content: space-between; gap: 8px; }
+          .btn-logout { padding: 8px 12px; font-size: 0.8rem; flex: 1; justify-content: center; }
+          .mapWrap { height: 260px; }
+          .mainGrid { gap: 16px; }
+        }
+
+        @media (max-width: 640px) {
+          .mobile-only { display: block; }
+          .desktop-only { display: none; }
+          .head-left { gap: 12px; }
+          .iconBox { width: 44px; height: 44px; font-size: 18px; }
+          .cards { grid-template-columns: 1fr; gap: 12px; }
+          .cVal { font-size: 1.5rem; }
+          .tableWrap { display: none; }
+          .panelHead { padding: 16px; }
+          .pLeft { flex-direction: column; align-items: stretch; }
+          .searchBox { width: 100%; }
+          .filters { width: 100%; justify-content: space-between; }
+          .mList { display: grid; gap: 12px; padding: 12px; }
+          .mCard { background: rgba(255,255,255,0.03); border: 1px solid var(--border); border-radius: 16px; padding: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
+          .mTop { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+          .mDate { font-weight: 850; font-size: 0.9rem; color: #fff; }
+          .mTimes { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+          .mTime { font-size: 0.8rem; font-weight: 700; }
+          .mTime label { display: block; color: var(--muted); font-size: 9px; text-transform: uppercase; margin-bottom: 2px; }
+          .mReports { border-top: 1px solid var(--border); padding-top: 12px; display: grid; gap: 8px; font-size: 0.8rem; }
+          .mR { line-height: 1.4; }
+          .mR label { font-weight: 800; color: var(--primary); margin-right: 4px; }
+          .breakStats { flex-direction: column; gap: 12px; }
+          .bStat { width: 100%; }
         }
       `}</style>
     </div>

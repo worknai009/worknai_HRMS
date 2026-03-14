@@ -23,6 +23,22 @@ import {
   FaQuoteLeft,
 } from "react-icons/fa";
 import { toast } from "react-toastify";
+import careerImg from "../../assets/career.png";
+import ruturajImg from "../../assets/ruturaj.png";
+import rudrakshaImg from "../../assets/rudraksha.png";
+import rutujaImg from "../../assets/rutuja.png";
+import gauravImg from "../../assets/gaurav.png";
+import sakshiImg from "../../assets/sakshi.png";
+import samikshaImg from "../../assets/samiksha.png";
+import prernaImg from "../../assets/prerna.png";
+import nishigandhaImg from "../../assets/nishigandha.png";
+import maheshImg from "../../assets/mahesh.png";
+import sagarImg from "../../assets/sagar.png";
+import rushikaImg from "../../assets/rushika.png";
+import pruthvrajImg from "../../assets/pruthvraj.png";
+import renukaImg from "../../assets/renuka.png";
+import divyaImg from "../../assets/divya.png";
+import shubhamImg from "../../assets/shubham.png";
 
 // Helper: Relative time
 const timeAgo = (iso) => {
@@ -58,6 +74,34 @@ const Careers = () => {
 
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedJob, setSelectedJob] = useState(null);
+
+  const [activeIndex, setActiveIndex] = useState(0);
+  const storiesList = [
+    { src: nishigandhaImg, name: "Nishigandha", text: "Worknai offers a fantastic environment to innovate and excel." },
+    { src: maheshImg, name: "Mahesh", text: "The culture of collaboration here is truly inspiring." },
+    { src: renukaImg, name: "Renuka", text: "A place where passion meets purpose and growth is inevitable." },
+    { src: gauravImg, name: "Gaurav", text: "Amazing team and incredibly impactful projects." },
+    { src: sakshiImg, name: "Sakshi", text: "Work-life balance and career growth are unmatched." },
+    { src: ruturajImg, name: "Ruturaj", text: "A great place for constant innovation and growth!" },
+    { src: prernaImg, name: "Prerna", text: "Proud to be part of such a talented and driven team." },
+    { src: rudrakshaImg, name: "Rudraksha", text: "The culture here brings out the best in everyone." },
+    { src: divyaImg, name: "Divya", text: "Truly grateful for the mentorship and growth I've found here." },
+    { src: sagarImg, name: "Sagar", text: "Innovative projects and a supportive team make work exciting." },
+    { src: rutujaImg, name: "Rutuja", text: "I love the flexible and supportive environment." },
+    { src: pruthvrajImg, name: "Pruthvraj", text: "Every day brings new challenges and learning opportunities." },
+    { src: samikshaImg, name: "Samiksha", text: "Every day is a new learning opportunity here." },
+    { src: shubhamImg, name: "Shubham", text: "A great environment for professional and personal development." },
+    { src: rushikaImg, name: "Rushika", text: "I've had immense opportunities to learn and grow here." },
+
+
+  ];
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setActiveIndex(prev => (prev + 1) % storiesList.length);
+    }, 7000); // cycle every 7 seconds
+    return () => clearInterval(timer);
+  }, [storiesList.length]);
 
   // URL Params
   const { companyId } = useParams();
@@ -214,44 +258,53 @@ const Careers = () => {
       <div className="career-hero">
         <div className="hero-glow" />
         <div className="hero-noise" />
-        <div className="hero-content">
-          <div className="hero-pill">
-            <FaBolt /> We are hiring top talent
-          </div>
-
-          <h1 className="hero-title">
-            Build Your <span className="highlight">Future</span> With Us
-          </h1>
-          <p className="hero-subtitle">
-            Join a team of innovators and creators. Explore exciting career opportunities
-            and help us shape the future of technology.
-          </p>
-
-          <div className="hero-actions">
-            <div className="search-bar">
-              <FaSearch className="search-icon" />
-              <input
-                type="text"
-                placeholder="Search job title, department..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-              {!!searchTerm && (
-                <button className="clear-search" onClick={() => setSearchTerm("")}>
-                  <FaTimes />
-                </button>
-              )}
+        <div className="hero-container container">
+          <div className="hero-left">
+            <div className="hero-pill">
+              <FaBolt /> We are hiring top talent
             </div>
 
-            <button
-              className="track-btn"
-              onClick={() => {
-                setStatusResult(null);
-                setShowStatusModal(true);
-              }}
-            >
-              <FaCheckCircle /> Track Application
-            </button>
+            <h1 className="hero-title">
+              Build Your <span className="highlight">Future</span> With Us
+            </h1>
+            <p className="hero-subtitle">
+              Join a team of innovators and creators. Explore exciting career opportunities
+              and help us shape the future of technology.
+            </p>
+
+            <div className="hero-actions">
+              <div className="search-bar">
+                <FaSearch className="search-icon" />
+                <input
+                  type="text"
+                  placeholder="Search jobs, departments..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+                {!!searchTerm && (
+                  <button className="clear-search" onClick={() => setSearchTerm("")}>
+                    <FaTimes />
+                  </button>
+                )}
+              </div>
+
+              <button
+                className="track-btn"
+                onClick={() => {
+                  setStatusResult(null);
+                  setShowStatusModal(true);
+                }}
+              >
+                <FaCheckCircle /> Track Application
+              </button>
+            </div>
+          </div>
+
+          <div className="hero-right">
+            <div className="hero-img-wrap">
+              <img src={careerImg} alt="Careers" className="hero-img" />
+              <div className="img-glow" />
+            </div>
           </div>
         </div>
       </div>
@@ -284,6 +337,35 @@ const Careers = () => {
               <h4>Remote Options</h4>
               <p>Flexible work-from-home policies for better balance.</p>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* TESTIMONIALS */}
+      <section className="section test-section">
+        <div className="container">
+          <div className="sec-head text-center">
+            <h3>Employee Stories</h3>
+            <p className="sub">Hear what our team has to say.</p>
+          </div>
+          <div className="neat-slider-container">
+            {storiesList.map((story, idx) => {
+              const total = storiesList.length;
+              let offset = idx - activeIndex;
+              if (offset < -Math.floor(total / 2)) offset += total;
+              if (offset > Math.floor(total / 2)) offset -= total;
+
+              let positionClass = "slide-hidden";
+              if (offset === 0) positionClass = "slide-center";
+              else if (offset === -1) positionClass = "slide-left";
+              else if (offset === 1) positionClass = "slide-right";
+
+              return (
+                <div key={idx} className={`neat-slide-card ${positionClass}`}>
+                  <img src={story.src} alt={`Story of ${story.name}`} className="neat-slide-img" />
+                </div>
+              );
+            })}
           </div>
         </div>
       </section>
@@ -375,7 +457,7 @@ const Careers = () => {
 
                       <div className="tags-row">
                         <span className="tag"><FaBriefcase /> {job.experience || "Fresher"}</span>
-                        {job.passingYear && <span className="tag" style={{ borderColor: '#fbbf24', background: '#fffbeb', color: '#b45309' }}>🎓 Batch {job.passingYear}</span>}
+                        {job.passingYear && <span className="tag" style={{ borderColor: 'rgba(251, 191, 36, 0.4)', background: 'rgba(251, 191, 36, 0.1)', color: '#fbbf24' }}>🎓 Batch {job.passingYear}</span>}
                         <span className="tag"><FaMapMarkerAlt /> {job.location || "Remote"}</span>
                         <span className="tag"><FaRupeeSign /> {job.salaryRange || "Competitive"}</span>
                       </div>
@@ -384,7 +466,7 @@ const Careers = () => {
                       {job.skills && job.skills.length > 0 && (
                         <div className="tags-row" style={{ marginTop: 6 }}>
                           {job.skills.slice(0, 3).map((sk, skIdx) => (
-                            <span key={skIdx} className="tag" style={{ background: '#e0f2fe', color: '#0369a1', borderColor: '#bae6fd' }}>
+                            <span key={skIdx} className="tag" style={{ background: 'rgba(80, 200, 255, 0.1)', color: '#50c8ff', borderColor: 'rgba(80, 200, 255, 0.2)' }}>
                               {sk}
                             </span>
                           ))}
@@ -410,40 +492,6 @@ const Careers = () => {
           )}
         </div>
       </div>
-
-      {/* TESTIMONIALS */}
-      <section className="section test-section">
-        <div className="container">
-          <div className="sec-head text-center">
-            <h3>Employee Stories</h3>
-            <p className="sub">Hear what our team has to say.</p>
-          </div>
-          <div className="test-grid">
-            <div className="t-card">
-              <FaQuoteLeft className="quote-icon" />
-              <p>"The best place to grow your career. The mentorship here is outstanding."</p>
-              <div className="t-user">
-                <div className="t-av">S</div>
-                <div>
-                  <div className="t-name">Sarah Jenkins</div>
-                  <div className="t-role">Product Designer</div>
-                </div>
-              </div>
-            </div>
-            <div className="t-card">
-              <FaQuoteLeft className="quote-icon" />
-              <p>"I love the flexibility and the challenging problems we get to solve every day."</p>
-              <div className="t-user">
-                <div className="t-av">M</div>
-                <div>
-                  <div className="t-name">Mike Ross</div>
-                  <div className="t-role">Senior Engineer</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
 
       {/* APPLY MODAL */}
       {selectedJob && (
@@ -517,145 +565,599 @@ const Careers = () => {
 
       <style>{`
         /* Global & Reset */
-        .career-page { font-family: 'Inter', sans-serif; background: #f8fafc; color: #0f172a; min-height: 100vh; padding-bottom: 60px; }
-        .container { max-width: 1200px; margin: 0 auto; padding: 0 16px; }
+        .career-page, .career-page * { box-sizing: border-box; }
+        .career-page { 
+          font-family: 'Inter', sans-serif; 
+          background: #050714; 
+          color: #ffffff; 
+          min-height: 100vh; 
+          padding-top: 80px; /* Space for fixed navbar */
+          padding-bottom: 60px; 
+        }
+        .container { max-width: 1200px; margin: 0 auto; padding: 0 16px; width: 100%; }
         .text-center { text-align: center; }
         
         /* HERO */
         .career-hero {
-          background: #0f172a; color: white; padding: 80px 16px 100px;
-          position: relative; overflow: hidden; text-align: center;
-          border-bottom-left-radius: 40px; border-bottom-right-radius: 40px;
+          background: #050714; 
+          color: white; 
+          padding: 80px 16px 120px;
+          position: relative; 
+          overflow: hidden; 
+          text-align: center;
+          border-bottom-left-radius: 60px; 
+          border-bottom-right-radius: 60px;
         }
-        .highlight { background: linear-gradient(90deg, #38bdf8, #818cf8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        .hero-title { font-size: 3rem; font-weight: 800; margin-bottom: 16px; letter-spacing: -1px; }
-        .hero-subtitle { font-size: 1.1rem; opacity: 0.8; max-width: 600px; margin: 0 auto 32px; line-height: 1.6; }
+
+        .hero-glow {
+          position: absolute;
+          top: -20%;
+          left: 50%;
+          transform: translateX(-50%);
+          width: 80%;
+          height: 100%;
+          background: radial-gradient(circle, rgba(80, 200, 255, 0.15) 0%, transparent 70%);
+          pointer-events: none;
+          z-index: 0;
+        }
+
+        .hero-noise {
+          position: absolute;
+          inset: 0;
+          background-image: url("https://grainy-gradients.vercel.app/noise.svg");
+          opacity: 0.15;
+          pointer-events: none;
+          z-index: 1;
+        }
+
+        .hero-container { 
+          display: flex; 
+          flex-direction: row;
+          flex-wrap: nowrap;
+          align-items: stretch; 
+          justify-content: space-between; 
+          gap: 40px; 
+          position: relative; 
+          z-index: 2; 
+          text-align: left;
+        }
+
+        .hero-left { 
+          flex: 1; 
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+        }
+        
+        .hero-right { 
+          flex: 1; 
+          display: flex; 
+          justify-content: flex-end; 
+          align-items: stretch;
+        }
+
+        .hero-img-wrap {
+          position: relative;
+          width: 100%;
+          max-width: 500px;
+          display: flex;
+          height: auto;
+          align-items: center;
+        }
+
+        .hero-img {
+          width: 100%;
+          height: auto;
+          max-height: 100%;
+          object-fit: contain;
+          border-radius: 40px;
+          box-shadow: 0 30px 60px rgba(0,0,0,0.6);
+          border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .img-glow {
+          position: absolute;
+          inset: -30px;
+          background: radial-gradient(circle, rgba(80, 200, 255, 0.25) 0%, transparent 70%);
+          z-index: -1;
+        }
+
+        .highlight { 
+          background: linear-gradient(90deg, #50c8ff, #a78bfa, #e879f9); 
+          -webkit-background-clip: text; 
+          -webkit-text-fill-color: transparent; 
+          font-weight: 900;
+        }
+
+        .hero-title { 
+          font-size: clamp(2.5rem, 5vw, 4.2rem); 
+          font-weight: 800; 
+          margin-bottom: 24px; 
+          letter-spacing: -2px; 
+          line-height: 1.1;
+        }
+        .hero-subtitle { 
+          font-size: 1.3rem; 
+          color: rgba(255, 255, 255, 0.7); 
+          max-width: 600px; 
+          margin: 0 0 40px; 
+          line-height: 1.6; 
+        }
+        
         .hero-pill { 
-           display: inline-flex; align-items: center; gap: 8px; background: rgba(255,255,255,0.1); 
-           padding: 6px 12px; border-radius: 20px; font-size: 0.85rem; font-weight: 600; margin-bottom: 24px;
-           border: 1px solid rgba(255,255,255,0.15);
+           display: inline-flex; align-items: center; gap: 8px; 
+           background: rgba(80, 200, 255, 0.1); 
+           padding: 8px 16px; border-radius: 30px; 
+           font-size: 0.8rem; font-weight: 700; 
+           margin-bottom: 30px;
+           border: 1px solid rgba(80, 200, 255, 0.2);
+           color: #50c8ff;
+           text-transform: uppercase;
+           letter-spacing: 1px;
+           width: fit-content;
         }
-        .hero-actions { display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; }
+
+        .hero-actions { display: flex; justify-content: flex-start; gap: 16px; flex-wrap: wrap; }
+        
         .search-bar { 
-           background: white; padding: 6px 12px; border-radius: 12px; display: flex; align-items: center; 
-           width: 100%; max-width: 400px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); 
+           background: rgba(255, 255, 255, 0.05); 
+           padding: 0 24px; 
+           border-radius: 30px; 
+           display: flex; align-items: center; 
+           width: 100%; max-width: 500px; 
+           height: 60px;
+           box-sizing: border-box;
+           box-shadow: 0 20px 40px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.05); 
+           border: 1px solid rgba(255, 255, 255, 0.1);
+           backdrop-filter: blur(20px);
+           transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+           position: relative;
         }
-        .search-bar input { border: none; outline: none; padding: 8px; flex: 1; font-weight: 600; font-size: 0.95rem; }
-        .search-icon { color: #64748b; }
-        .clear-search { background: none; border: none; color: #94a3b8; cursor: pointer; }
+        .search-bar:focus-within {
+          border-color: #50c8ff;
+          background: rgba(255, 255, 255, 0.08);
+          box-shadow: 0 20px 45px rgba(80, 200, 255, 0.15);
+          transform: translateY(-2px);
+        }
+        .search-bar input { 
+          background: transparent; border: none; outline: none; 
+          padding: 12px; flex: 1; font-weight: 500; 
+          font-size: 1.05rem; color: white;
+          min-width: 0;
+          text-overflow: ellipsis;
+        }
+        .search-bar input::placeholder { color: rgba(255, 255, 255, 0.4); }
+        .search-icon { color: #50c8ff; font-size: 1.4rem; filter: drop-shadow(0 0 10px rgba(80, 200, 255, 0.3)); }
+        .clear-search { background: none; border: none; color: rgba(255, 255, 255, 0.3); cursor: pointer; padding: 5px; transition: 0.2s; }
+        .clear-search:hover { color: #f87171; transform: scale(1.1); }
         
         .track-btn {
-           background: rgba(255,255,255,0.15); color: white; border: 1px solid rgba(255,255,255,0.2);
-           padding: 10px 18px; border-radius: 12px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px;
-           transition: 0.2s;
+           background: rgba(255, 255, 255, 0.04); 
+           color: white; 
+           border: 1px solid rgba(255, 255, 255, 0.08);
+           padding: 0 32px; 
+           border-radius: 30px; 
+           height: 60px;
+           box-sizing: border-box;
+           font-weight: 700; 
+           cursor: pointer; 
+           display: flex; align-items: center; gap: 12px;
+           transition: 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+           backdrop-filter: blur(20px);
+           font-size: 1rem;
         }
-        .track-btn:hover { background: rgba(255,255,255,0.25); transform: translateY(-2px); }
+        .track-btn:hover { 
+          background: rgba(80, 200, 255, 0.08); 
+          transform: translateY(-2px); 
+          border-color: rgba(80, 200, 255, 0.4);
+          box-shadow: 0 15px 30px rgba(80, 200, 255, 0.1);
+        }
+        .track-btn:active { transform: translateY(0); }
+        .track-btn svg { font-size: 1.2rem; color: #50c8ff; filter: drop-shadow(0 0 8px rgba(80, 200, 255, 0.3)); }
 
         /* SECTIONS */
         .section { padding: 60px 0; }
-        .sec-head h3 { font-size: 1.8rem; font-weight: 800; margin-bottom: 8px; color: #1e293b; }
-        .sec-head .sub { color: #64748b; font-size: 1rem; margin-bottom: 40px; }
+        .sec-head h3 { font-size: 2.25rem; font-weight: 800; margin-bottom: 10px; color: #ffffff; letter-spacing: -0.5px; }
+        .sec-head .sub { color: rgba(255, 255, 255, 0.6); font-size: 1.1rem; margin-bottom: 40px; }
 
         /* BENEFITS */
-        .benefits-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 24px; }
-        .b-card { background: white; padding: 24px; border-radius: 16px; border: 1px solid #e2e8f0; text-align: center; transition: 0.2s; }
-        .b-card:hover { transform: translateY(-4px); box-shadow: 0 10px 30px rgba(0,0,0,0.05); }
-        .b-icon { font-size: 2rem; color: #3b82f6; margin-bottom: 16px; }
-        .b-card h4 { font-size: 1.1rem; font-weight: 700; margin-bottom: 8px; }
-        .b-card p { color: #64748b; font-size: 0.9rem; line-height: 1.5; }
+        .benefits-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 24px; }
+        .b-card { 
+          background: rgba(255, 255, 255, 0.03); 
+          padding: 32px 24px; 
+          border-radius: 24px; 
+          border: 1px solid rgba(255, 255, 255, 0.08); 
+          text-align: center; 
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          backdrop-filter: blur(12px);
+        }
+        .b-card:hover { 
+          transform: translateY(-8px); 
+          background: rgba(255, 255, 255, 0.06);
+          border-color: rgba(80, 200, 255, 0.3);
+          box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+        }
+        .b-icon { font-size: 2.5rem; color: #50c8ff; margin-bottom: 20px; filter: drop-shadow(0 0 10px rgba(80, 200, 255, 0.3)); }
+        .b-card h4 { font-size: 1.25rem; font-weight: 700; margin-bottom: 12px; color: #ffffff; }
+        .b-card p { color: rgba(255, 255, 255, 0.6); font-size: 0.95rem; line-height: 1.6; }
 
         /* MAIN LAYOUT */
-        .main-layout { display: flex; gap: 32px; padding-top: 40px; align-items: flex-start; }
-        .filters-sidebar { width: 260px; flex-shrink: 0; position: sticky; top: 100px; display: none; }
-        @media (min-width: 900px) { .filters-sidebar { display: block; } }
+        .main-layout { display: flex; gap: 40px; padding-top: 20px; align-items: flex-start; }
+        .filters-sidebar { width: 280px; flex-shrink: 0; position: sticky; top: 100px; display: none; }
+        @media (min-width: 1024px) { .filters-sidebar { display: block; } }
         
-        .filter-card { background: white; padding: 20px; border-radius: 16px; border: 1px solid #e2e8f0; }
-        .filter-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; font-weight: 700; }
-        .link-btn { background: none; border: none; color: #3b82f6; font-weight: 600; cursor: pointer; }
-        .filter-group { margin-bottom: 20px; }
-        .filter-title { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px; color: #94a3b8; font-weight: 700; margin-bottom: 10px; }
-        .check-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; font-size: 0.9rem; color: #475569; cursor: pointer; }
+        .filter-card { 
+          background: rgba(255, 255, 255, 0.03); 
+          padding: 24px; 
+          border-radius: 24px; 
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          backdrop-filter: blur(12px);
+        }
+        .filter-head { 
+          display: flex; justify-content: space-between; align-items: center; 
+          margin-bottom: 20px; font-weight: 800; color: #ffffff;
+        }
+        .link-btn { background: none; border: none; color: #50c8ff; font-weight: 700; cursor: pointer; font-size: 0.9rem; }
+        .filter-group { margin-bottom: 24px; }
+        .filter-title { 
+          font-size: 0.75rem; text-transform: uppercase; 
+          letter-spacing: 1.5px; color: rgba(255, 255, 255, 0.4); 
+          font-weight: 800; margin-bottom: 12px; 
+        }
+        .check-row { 
+          display: flex; align-items: center; gap: 10px; 
+          margin-bottom: 12px; font-size: 0.95rem; 
+          color: rgba(255, 255, 255, 0.7); cursor: pointer; 
+          transition: 0.2s;
+        }
+        .check-row:hover { color: #ffffff; }
+        .check-row input { accent-color: #50c8ff; width: 16px; height: 16px; }
         
         /* JOBS */
         .jobs-section { flex: 1; }
-        .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        .section-header h2 { font-size: 1.5rem; font-weight: 800; color: #1e293b; }
-        .sort-box { display: flex; align-items: center; gap: 8px; font-size: 0.9rem; color: #64748b; }
-        .sort-box select { border: 1px solid #cbd5e1; padding: 4px 8px; border-radius: 6px; }
+        .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
+        .section-header h2 { font-size: 1.75rem; font-weight: 800; color: #ffffff; letter-spacing: -0.5px; }
+        .sort-box { display: flex; align-items: center; gap: 10px; font-size: 0.95rem; color: rgba(255, 255, 255, 0.6); }
+        .sort-box select { 
+          background: rgba(255, 255, 255, 0.05); 
+          border: 1px solid rgba(255, 255, 255, 0.1); 
+          padding: 6px 12px; border-radius: 10px; 
+          color: white; font-weight: 600;
+        }
+        .sort-box select option { background: #080d1e; color: white; }
 
-        .jobs-grid { display: grid; gap: 16px; }
-        .job-card-public { background: white; border: 1px solid #e2e8f0; border-radius: 16px; overflow: hidden; transition: 0.2s; display: flex; flex-direction: column; }
-        .job-card-public:hover { border-color: #3b82f6; box-shadow: 0 4px 20px rgba(59,130,246,0.1); transform: translateY(-2px); }
+        .jobs-grid { display: grid; gap: 20px; }
+        .job-card-public { 
+          background: rgba(255, 255, 255, 0.03); 
+          border: 1px solid rgba(255, 255, 255, 0.08); 
+          border-radius: 24px; 
+          overflow: hidden; 
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
+          display: flex; flex-direction: column; 
+          backdrop-filter: blur(12px);
+        }
+        .job-card-public:hover { 
+          border-color: rgba(80, 200, 255, 0.4); 
+          background: rgba(255, 255, 255, 0.05);
+          box-shadow: 0 15px 40px rgba(0,0,0,0.4); 
+          transform: translateY(-4px); 
+        }
         
-        .card-body { padding: 20px; flex: 1; }
-        .card-top { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 12px; }
-        .company-logo { width: 42px; height: 42px; border-radius: 10px; background: #3b82f6; color: white; display: grid; place-items: center; font-weight: 800; font-size: 1.2rem; }
-        .job-title { font-size: 1.1rem; font-weight: 700; color: #0f172a; margin-bottom: 2px; }
-        .company-name { font-size: 0.85rem; color: #64748b; font-weight: 500; }
-        .type-badge { margin-left: auto; background: #f1f5f9; padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; color: #475569; white-space: nowrap; }
+        .card-body { padding: 24px; flex: 1; }
+        .card-top { display: flex; align-items: flex-start; gap: 16px; margin-bottom: 16px; }
+        .company-logo { 
+          width: 48px; height: 48px; border-radius: 14px; 
+          background: linear-gradient(135deg, #3b82f6, #8b5cf6); 
+          color: white; display: grid; place-items: center; 
+          font-weight: 800; font-size: 1.4rem; 
+          box-shadow: 0 8px 16px rgba(59, 130, 246, 0.3);
+        }
+        .job-title { font-size: 1.3rem; font-weight: 800; color: #ffffff; margin-bottom: 4px; letter-spacing: -0.3px; }
+        .company-name { font-size: 0.95rem; color: rgba(255, 255, 255, 0.6); font-weight: 600; }
+        .type-badge { 
+          margin-left: auto; 
+          background: rgba(80, 200, 255, 0.1); 
+          padding: 6px 14px; border-radius: 30px; 
+          font-size: 0.75rem; font-weight: 800; 
+          color: #50c8ff; white-space: nowrap; 
+          border: 1px solid rgba(80, 200, 255, 0.2);
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+        }
         
-        .tags-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
-        .tag { display: inline-flex; align-items: center; gap: 5px; font-size: 0.8rem; background: #f8fafc; padding: 4px 8px; border-radius: 6px; color: #64748b; border: 1px solid #e2e8f0; }
-        .job-desc { color: #475569; font-size: 0.9rem; line-height: 1.5; }
+        .tags-row { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; }
+        .tag { 
+          display: inline-flex; align-items: center; gap: 6px; 
+          font-size: 0.85rem; 
+          background: rgba(255, 255, 255, 0.05); 
+          padding: 6px 12px; border-radius: 10px; 
+          color: rgba(255, 255, 255, 0.8); 
+          border: 1px solid rgba(255, 255, 255, 0.1); 
+          font-weight: 500;
+        }
+        .job-desc { color: rgba(255, 255, 255, 0.65); font-size: 0.95rem; line-height: 1.6; }
         
-        .card-footer { padding: 12px 20px; background: #f8fafc; border-top: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center; }
-        .post-time { font-size: 0.8rem; color: #94a3b8; display: flex; align-items: center; gap: 5px; }
-        .apply-btn-sm { background: #0f172a; color: white; padding: 8px 16px; border-radius: 10px; font-weight: 600; border: none; cursor: pointer; display: flex; align-items: center; gap: 6px; font-size: 0.9rem; transition: 0.2s; }
-        .apply-btn-sm:hover { background: #1e293b; }
+        .card-footer { 
+          padding: 16px 24px; 
+          background: rgba(255, 255, 255, 0.02); 
+          border-top: 1px solid rgba(255, 255, 255, 0.05); 
+          display: flex; justify-content: space-between; align-items: center; 
+        }
+        .post-time { font-size: 0.85rem; color: rgba(255, 255, 255, 0.4); display: flex; align-items: center; gap: 6px; font-weight: 500; }
+        
+        .apply-btn-sm { 
+          background: linear-gradient(135deg, #3b82f6, #8b5cf6); 
+          color: white; padding: 10px 20px; 
+          border-radius: 14px; 
+          font-weight: 800; border: none; 
+          cursor: pointer; display: flex; align-items: center; gap: 8px; 
+          font-size: 0.95rem; transition: 0.3s; 
+          box-shadow: 0 8px 20px -5px rgba(59, 130, 246, 0.5);
+        }
+        .apply-btn-sm:hover { 
+          transform: translateY(-2px); 
+          box-shadow: 0 12px 25px -5px rgba(139, 92, 246, 0.6);
+        }
+        .apply-btn-sm:active { transform: translateY(0); }
 
-        /* TESTIMONIALS */
-        .test-section { background: white; border-top: 1px solid #e2e8f0; }
-        .test-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px; }
-        .t-card { background: #f8fafc; padding: 24px; border-radius: 16px; position: relative; }
-        .quote-icon { color: #cbd5e1; font-size: 1.5rem; margin-bottom: 12px; }
-        .t-card p { font-size: 1rem; font-style: italic; color: #334155; margin-bottom: 16px; }
-        .t-user { display: flex; align-items: center; gap: 12px; }
-        .t-av { width: 40px; height: 40px; border-radius: 50%; background: #94a3b8; display: grid; place-items: center; color: white; font-weight: 700; }
-        .t-name { font-weight: 700; font-size: 0.95rem; color: #0f172a; }
-        .t-role { font-size: 0.8rem; color: #64748b; }
+       
+        
+        /* ============================= */
+/* NEAT 3-CARD CAROUSEL FX       */
+/* ============================= */
 
-        /* MODAL */
-        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: flex; justify-content: center; align-items: center; z-index: 1000; backdrop-filter: blur(5px); padding: 16px; }
-        .modal-box { background: white; width: 100%; max-width: 480px; padding: 24px; border-radius: 20px; box-shadow: 0 20px 50px rgba(0,0,0,0.2); }
-        .animate-pop { animation: popIn 0.2s ease-out; }
-        @keyframes popIn { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; }}
+.test-section {
+  background: rgba(5, 7, 20, 0.5);
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  overflow: hidden;
+}
+
+.neat-slider-container {
+  position: relative;
+  width: 100%;
+  max-width: 1000px;
+  height: 520px;
+  margin: 0 auto;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px 0;
+}
+
+.neat-slide-card {
+  position: absolute;
+  width: 340px;
+  height: 480px;
+  border-radius: 20px;
+  background: transparent;
+  transition: all 1.2s cubic-bezier(0.25, 1, 0.5, 1);
+  overflow: hidden;
+  display: flex;
+}
+
+.neat-slide-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  border-radius: 20px;
+}
+
+/* Position Classes */
+.slide-center {
+  transform: translateX(0) scale(1.0);
+  opacity: 1;
+  z-index: 3;
+  filter: blur(0px) grayscale(0%);
+}
+
+.slide-left {
+  transform: translateX(-80%) scale(0.8);
+  opacity: 0.5;
+  z-index: 2;
+  filter: grayscale(60%) blur(2px);
+}
+
+.slide-right {
+  transform: translateX(80%) scale(0.8);
+  opacity: 0.5;
+  z-index: 2;
+  filter: grayscale(60%) blur(2px);
+}
+
+        /* POSITION CLASSES */
+        .slide-hidden {
+          transform: translateX(0) scale(0.5);
+          opacity: 0;
+          z-index: 1;
+          pointer-events: none;
+        }
         
-        .modal-head { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; }
-        .modal-head h3 { margin: 0; font-size: 1.25rem; color: #0f172a; }
-        .modal-sub { font-size: 0.85rem; color: #64748b; margin-top: 4px; }
-        .close-btn { background: none; border: none; font-size: 1.2rem; color: #94a3b8; cursor: pointer; }
-        
-        .form-group { margin-bottom: 16px; }
-        .form-group label { display: block; font-size: 0.85rem; font-weight: 700; color: #334155; margin-bottom: 6px; }
-        .form-group input { width: 100%; padding: 10px; border-radius: 10px; border: 1px solid #cbd5e1; font-size: 0.95rem; }
-        .btn-primary { background: #3b82f6; color: white; border: none; padding: 12px; border-radius: 10px; font-weight: 700; width: 100%; cursor: pointer; font-size: 1rem; }
-        .btn-primary:hover { background: #2563eb; }
-        .btn-primary:disabled { opacity: 0.7; cursor: not-allowed; }
+        /* MODAL STYLES */
+        .modal-overlay {
+          position: fixed; inset: 0; background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(8px);
+          display: flex; align-items: center; justify-content: center; z-index: 9999; padding: 16px;
+        }
+        .modal-box {
+          background: #080d1e; border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 24px;
+          width: 100%; max-width: 500px; padding: 30px; box-shadow: 0 25px 50px rgba(0,0,0,0.6);
+          text-align: left;
+        }
+        .animate-pop { animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+        @keyframes popIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; }}
+        .modal-head { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px; }
+        .modal-head h3 { font-size: 1.5rem; font-weight: 800; margin-bottom: 4px; }
+        .modal-sub { color: rgba(255, 255, 255, 0.6); font-size: 0.95rem; }
+        .close-btn { 
+          background: rgba(255, 255, 255, 0.05); border: none; border-radius: 50%; width: 32px; height: 32px; flex-shrink: 0;
+          display: flex; align-items: center; justify-content: center; color: #fff; cursor: pointer; transition: 0.2s;
+        }
+        .close-btn:hover { background: rgba(255, 255, 255, 0.1); color: #f87171; }
+        .form-group { margin-bottom: 20px; text-align: left; }
+        .form-group label { display: block; font-size: 0.9rem; font-weight: 600; color: rgba(255, 255, 255, 0.8); margin-bottom: 8px; }
+        .form-group input { 
+          width: 100%; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1);
+          padding: 12px 16px; border-radius: 12px; color: #fff; font-size: 1rem; outline: none; transition: 0.2s;
+        }
+        .form-group input:focus { border-color: #50c8ff; background: rgba(80, 200, 255, 0.05); }
+        .btn-primary.full-width {
+          width: 100%; background: linear-gradient(135deg, #3b82f6, #8b5cf6); color: #fff; border: none;
+          padding: 14px; border-radius: 12px; font-weight: 700; font-size: 1rem; cursor: pointer;
+          display: flex; justify-content: center; align-items: center; gap: 8px; transition: 0.3s;
+        }
+        .btn-primary.full-width:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(59, 130, 246, 0.4); }
         
         /* STATUS RESULT */
-        .status-result { margin-top: 24px; background: #f1f5f9; padding: 16px; border-radius: 12px; animation: slideDown 0.3s ease; }
-        @keyframes slideDown { from { transform: translateY(-10px); opacity: 0; } to { transform: translateY(0); opacity: 1; }}
+        .status-result { 
+          margin-top: 30px; 
+          background: rgba(255, 255, 255, 0.05); 
+          padding: 24px; border-radius: 20px; 
+          animation: slideDown 0.4s cubic-bezier(0.16, 1, 0.3, 1); 
+          border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        @keyframes slideDown { from { transform: translateY(-20px); opacity: 0; } to { transform: translateY(0); opacity: 1; }}
         
-        .st-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px; }
-        .st-title { font-weight: 700; font-size: 1rem; color: #0f172a; }
-        .st-badge { font-size: 0.75rem; padding: 2px 8px; border-radius: 6px; font-weight: 700; text-transform: uppercase; }
-        .st-badge.blue { background: #dbeafe; color: #1e40af; }
-        .st-badge.warn { background: #fef3c7; color: #92400e; }
-        .st-badge.success { background: #dcfce7; color: #166534; }
-        .st-badge.danger { background: #fee2e2; color: #991b1b; }
+        .st-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; border-bottom: 1px solid rgba(255, 255, 255, 0.1); padding-bottom: 16px; }
+        .st-title { font-weight: 800; font-size: 1.1rem; color: #ffffff; }
+        .st-badge { 
+          font-size: 0.7rem; padding: 4px 10px; 
+          border-radius: 30px; font-weight: 900; 
+          text-transform: uppercase; 
+          letter-spacing: 0.5px;
+        }
+        .st-badge.blue { background: rgba(80, 200, 255, 0.15); color: #50c8ff; border: 1px solid rgba(80, 200, 255, 0.3); }
+        .st-badge.warn { background: rgba(251, 191, 36, 0.15); color: #fbbf24; border: 1px solid rgba(251, 191, 36, 0.3); }
+        .st-badge.success { background: rgba(52, 211, 153, 0.15); color: #34d399; border: 1px solid rgba(52, 211, 153, 0.3); }
+        .st-badge.danger { background: rgba(248, 113, 113, 0.15); color: #f87171; border: 1px solid rgba(248, 113, 113, 0.3); }
+        .st-badge.info { background: rgba(167, 139, 250, 0.15); color: #a78bfa; border: 1px solid rgba(167, 139, 250, 0.3); }
+        .st-badge.purple { background: rgba(232, 121, 249, 0.15); color: #e879f9; border: 1px solid rgba(232, 121, 249, 0.3); }
         
-        .st-row { display: flex; justify-content: space-between; font-size: 0.9rem; margin-bottom: 8px; }
-        .st-lbl { color: #64748b; } .st-val { font-weight: 600; color: #334155; }
-        .st-msg { background: white; padding: 10px; border-radius: 8px; font-size: 0.9rem; color: #334155; border: 1px solid #e2e8f0; margin-top: 8px; }
+        .st-row { display: flex; justify-content: space-between; font-size: 0.95rem; margin-bottom: 10px; }
+        .st-lbl { color: rgba(255, 255, 255, 0.5); font-weight: 600; } .st-val { font-weight: 700; color: #ffffff; }
+        .st-msg { 
+          background: rgba(255, 255, 255, 0.05); 
+          padding: 14px; border-radius: 12px; 
+          font-size: 0.95rem; color: rgba(255, 255, 255, 0.85); 
+          border: 1px solid rgba(85, 85, 85, 0.1); margin-top: 12px;
+          line-height: 1.5;
+        }
         
-        .interview-box { margin-top: 12px; background: #fff7ed; border: 1px solid #ffedd5; padding: 12px; border-radius: 8px; }
-        .ib-head { font-weight: 700; color: #c2410c; margin-bottom: 8px; font-size: 0.9rem; }
-        .ib-row { font-size: 0.85rem; color: #431407; margin-bottom: 4px; }
+        .interview-box { 
+          margin-top: 16px; 
+          background: rgba(251, 191, 36, 0.05); 
+          border: 1px solid rgba(251, 191, 36, 0.2); 
+          padding: 16px; border-radius: 12px; 
+        }
+        .ib-head { font-weight: 800; color: #fbbf24; margin-bottom: 12px; font-size: 0.95rem; }
+        .ib-row { font-size: 0.9rem; color: rgba(255, 255, 255, 0.85); margin-bottom: 6px; }
+        .ib-row b { color: #fbbf24; }
         
+        @media (max-width: 1024px) {
+           .hero-container { gap: 30px; }
+           .hero-title { font-size: 3rem; }
+           .hero-subtitle { font-size: 1.1rem; }
+           .neat-slide-card { width: 300px; height: 420px; }
+           .neat-slider-container { height: 460px; }
+        }
+
         @media (max-width: 768px) {
-           .hero-title { font-size: 2rem; }
-           .main-layout { flex-direction: column; }
-           .filters-sidebar { display: none; } /* Could add a mobile filter drawer */
+           .section { padding: 50px 0; }
+           .sec-head .sub { margin-bottom: 30px; }
+           
+           .hero-container { 
+             flex-direction: column; 
+             text-align: center; 
+             padding-top: 20px;
+           }
+           .hero-left { 
+             flex: none; 
+             margin-bottom: 30px; 
+             display: flex;
+             flex-direction: column;
+             align-items: center;
+           }
+           .hero-right { 
+             display: flex; 
+             justify-content: center; 
+             width: 100%; 
+             align-items: center;
+             margin-top: 20px;
+           }
+           .hero-img-wrap { 
+             max-width: 250px; 
+             margin: 0 auto;
+           }
+           .hero-actions { 
+             justify-content: center; 
+             width: 100%;
+             max-width: 500px;
+             margin: 0 auto;
+           }
+           .hero-subtitle { 
+             margin: 0 auto 30px; 
+             font-size: 1rem;
+             max-width: 90%;
+           }
+           .hero-title { 
+             font-size: 2.2rem; 
+             margin-bottom: 16px;
+           }
+           .career-hero { 
+             padding: 100px 16px 50px; 
+             border-bottom-left-radius: 40px; 
+             border-bottom-right-radius: 40px; 
+           }
+           .main-layout { flex-direction: column; gap: 30px; }
+           .filters-sidebar { display: none; }
+           
+           .neat-slider-container { height: 400px; }
+           .neat-slide-card { width: 260px; height: 360px; }
+           .slide-left { transform: translateX(-45%) scale(0.75); }
+           .slide-right { transform: translateX(45%) scale(0.75); }
+        }
+
+        @media (max-width: 480px) {
+           .section { padding: 40px 0; }
+           .sec-head h3 { font-size: 1.8rem; }
+           .sec-head .sub { font-size: 0.95rem; margin-bottom: 24px; }
+           
+           .career-page { padding-top: 70px; }
+           .hero-title { font-size: 1.8rem; letter-spacing: -1px; }
+           .hero-pill { font-size: 0.7rem; padding: 6px 12px; margin-bottom: 20px; }
+           .hero-actions { 
+             flex-direction: column; 
+             align-items: stretch; 
+             gap: 16px;
+           }
+           .search-bar { 
+             max-width: 100%;
+             width: 100%;
+             height: 56px;
+             padding: 0 16px;
+             border-radius: 16px;
+           }
+           .search-bar input { padding: 8px; font-size: 0.95rem; }
+           .track-btn { 
+             width: 100%; 
+             height: 56px;
+             justify-content: center; 
+             padding: 0;
+             border-radius: 16px;
+             font-size: 1rem;
+           }
+           
+           .neat-slider-container { height: 310px; }
+           .neat-slide-card { width: 220px; height: 290px; }
+           .slide-left { transform: translateX(-25%) scale(0.7); opacity: 0.2; }
+           .slide-right { transform: translateX(25%) scale(0.7); opacity: 0.2; }
+
+           .card-top { flex-direction: column; gap: 10px; align-items: flex-start; }
+           .company-name { font-size: 0.85rem; }
+           .type-badge { margin-left: 0; margin-top: 4px; }
+           .apply-btn-sm { width: 100%; justify-content: center; padding: 12px; }
+           .career-hero { padding: 50px 15px 30px; }
+           
+           .section-header { flex-direction: column; align-items: flex-start; gap: 16px; margin-bottom: 24px; }
+           .section-header h2 { font-size: 1.4rem; }
         }
       `}</style>
     </div>

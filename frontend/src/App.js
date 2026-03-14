@@ -60,23 +60,34 @@ import Assignments from "./pages/Onboarding/Assignments";
 import MyOnboarding from "./pages/Onboarding/MyOnboarding";
 
 /* =========================================================
+   CONDITIONAL NAVBAR COMPONENT
+   ========================================================= */
+const ConditionalNavbar = () => {
+  const location = useLocation();
+
+  // Routes where we strictly want to hide the global landing navbar
+  const hidePrefixes = ['/superadmin', '/super-admin/', '/company/', '/hr/', '/employee/'];
+
+  // Special handling to ensure LOGIN pages still show the navbar
+  const isLoginPage = location.pathname.includes('-login');
+
+  const shouldHide = !isLoginPage && hidePrefixes.some(prefix => location.pathname.startsWith(prefix));
+
+  if (shouldHide) return null;
+  return <Navbar />;
+};
+
+/* =========================================================
    CONDITIONAL FOOTER COMPONENT
    ========================================================= */
 const ConditionalFooter = () => {
   const location = useLocation();
-
-  const hideFooterPrefixes = [
-    '/superadmin',
-    '/super-admin',
-    '/company',
-    '/hr',
-    '/employee'
-  ];
-
+  const hideFooterPrefixes = ['/superadmin', '/super-admin', '/company', '/hr', '/employee', '/register', '/admin-login'];
   const shouldHide = hideFooterPrefixes.some(prefix => location.pathname.startsWith(prefix));
   if (shouldHide) return null;
   return <Footer />;
 };
+
 
 function App() {
   return (
@@ -84,7 +95,7 @@ function App() {
       <ScrollToTop />
       <ToastContainer position="top-right" autoClose={3000} theme="colored" />
 
-      <Navbar />
+      <ConditionalNavbar />
 
       <div className="main-content">
         <Routes>
@@ -181,8 +192,9 @@ function App() {
         }
         .main-content {
           min-height: calc(100vh - 120px);
-          padding-top: 80px;
+          padding-top: 0;
         }
+        /* Landing pages padding handled by components, dashboard routes handled by their own layout */
       `}</style>
 
     </AuthProvider>

@@ -21,13 +21,16 @@ const onboardingRoutes = require("./routes/onboardingRoutes"); // ✅ Now this f
 
 const app = express();
 
-app.use(
-  helmet({ crossOriginResourcePolicy: false, contentSecurityPolicy: false }),
-);
-app.use(cors({ origin: true, credentials: true })); // Simplified for Dev
+app.use(cors({
+  origin: true,
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Origin", "X-Requested-With", "Content-Type", "Accept", "Authorization", "x-timezone", "x-client"]
+}));
+
 app.use(express.json({ limit: "15mb" }));
 app.use(express.urlencoded({ limit: "15mb", extended: true }));
-app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 // API Routes
 app.use("/api/auth", authRoutes);
@@ -43,7 +46,7 @@ app.use("/api/onboarding", onboardingRoutes); // ✅ 404 Solved
 
 app.use((req, res) => res.status(404).json({ message: "Route not found" }));
 
-const PORT = process.env.PORT || 5001;
+const PORT = process.env.PORT || 5000;
 const start = async () => {
   await connectDB();
   app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));

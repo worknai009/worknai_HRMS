@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import API from "../../services/api";
+import { getAssetUrl } from "../../utils/assetUrl";
 import { useAuth } from "../../context/AuthContext";
 import FaceCapture from "../../components/FaceCapture/FaceCapture";
 import { toast } from "react-toastify";
@@ -14,6 +15,7 @@ import {
   FaEnvelope,
   FaPlay,
   FaCoffee,
+  FaArrowsAlt,
   FaArrowRight,
   FaRedoAlt,
   FaTasks,
@@ -23,8 +25,10 @@ import {
   FaUserCheck,
   FaCheckCircle,
   FaSpinner,
+  FaCamera,
 } from "react-icons/fa";
 import { GoogleMap, useJsApiLoader, Marker, Circle } from "@react-google-maps/api";
+import worknaiLogo from "../../assets/worknai logo.png";
 
 /* =========================
    GOOGLE MAPS KEY (CRA .env)
@@ -40,7 +44,7 @@ const ENV_BACKEND = process.env.REACT_APP_SERVER_URL || process.env.REACT_APP_BA
 /* =========================
    MAP SETTINGS
 ========================= */
-const mapContainerStyle = { width: "100%", height: "260px", borderRadius: "16px" };
+const mapContainerStyle = { width: "100%", height: "300px", borderRadius: "20px" };
 
 /* =========================
    Request helper (fallback safe)
@@ -63,54 +67,30 @@ const tryReq = async (fnList = []) => {
 /* =========================
    Resolve backend host safely
 ========================= */
-const getApiHost = () => {
-  const base = API?.defaults?.baseURL || "";
-
-  // absolute baseURL (e.g. https://domain.com/api)
-  if (typeof base === "string" && /^https?:\/\//i.test(base)) {
-    return base.replace(/\/api\/?$/i, "").replace(/\/+$/, "");
+const getImageUrl = (imgPath, name = "") => {
+  if (!imgPath) {
+    const fn = (name || "User").replace(/\s+/g, "+");
+    return `https://ui-avatars.com/api/?name=${fn}&background=50c8ff&color=03050c&bold=true&size=128`;
   }
 
-  // relative baseURL (e.g. /api)
-  const winOrigin =
-    typeof window !== "undefined" && window.location?.origin ? window.location.origin : "";
-
-  const isLocalDev =
-    typeof window !== "undefined" && /localhost:3000|127\.0\.0\.1:3000/i.test(winOrigin);
-
-  if (ENV_BACKEND && /^https?:\/\//i.test(ENV_BACKEND)) {
-    return ENV_BACKEND.replace(/\/+$/, "");
+  let finalPath = imgPath;
+  if (typeof imgPath === "object") {
+    finalPath = imgPath.url || imgPath.secure_url || imgPath.filepath || imgPath.path || "";
   }
 
-  if (isLocalDev) return DEV_BACKEND_FALLBACK;
+  const assetUrl = getAssetUrl(finalPath);
 
-  return (winOrigin || DEV_BACKEND_FALLBACK).replace(/\/+$/, "");
-};
+  // Debug final generated URL in dev
+  if (process.env.NODE_ENV === "development" && assetUrl) {
+    if (!assetUrl.includes("ui-avatars")) {
+      console.log("Final Avatar URL:", assetUrl);
+    }
+  }
 
-const normalizeUploadPath = (raw) => {
-  if (!raw) return "";
-  const p = String(raw).replace(/\\/g, "/");
+  if (assetUrl) return assetUrl;
 
-  if (/^https?:\/\//i.test(p)) return p;
-
-  const lower = p.toLowerCase();
-  const idx = lower.lastIndexOf("/uploads/");
-  if (idx !== -1) return p.slice(idx + 1);
-
-  const idx2 = lower.indexOf("uploads/");
-  if (idx2 !== -1) return p.slice(idx2);
-
-  return p.replace(/^\/+/, "").replace(/^backend\//i, "");
-};
-
-const getImageUrl = (imgPath) => {
-  if (!imgPath) return "https://via.placeholder.com/150";
-  const p = String(imgPath);
-  if (p.startsWith("http")) return p;
-
-  const host = getApiHost();
-  const clean = normalizeUploadPath(p);
-  return `${host}/${clean}`;
+  const fn = (name || "User").replace(/\s+/g, "+");
+  return `https://ui-avatars.com/api/?name=${fn}&background=50c8ff&color=03050c&bold=true&size=128`;
 };
 
 /* =========================
@@ -275,12 +255,62 @@ const resolveJoiningDate = (u) => {
 
 const normalizeProfile = (u) => {
   if (!u) return null;
+
+  // 🕵️ Comprehensive Case-Insensitive Deep Scan
+  const getF = (obj, keys = []) => {
+    if (!obj) return null;
+    for (const k of keys) {
+      if (obj[k]) return obj[k];
+      // Case insensitive check
+      const lowK = k.toLowerCase();
+      const actualK = Object.keys(obj).find((x) => x.toLowerCase() === lowK);
+      if (actualK && obj[actualK]) return obj[actualK];
+    }
+    return null;
+  };
+
+  const rawImage =
+    getF(u, ["profileImage", "profile_image", "profilePicture", "avatar", "photo", "image", "img", "userImage", "url"]) ||
+    getF(u.employeeId, ["profileImage", "avatar", "photo", "image", "url"]) ||
+    getF(u.userId, ["profileImage", "avatar", "photo", "image", "url"]) ||
+    getF(u.employeeDetails, ["profileImage", "avatar", "photo", "image", "url"]) ||
+    getF(u.employmentDetails, ["profileImage", "avatar", "photo", "image", "url"]) ||
+    getF(u.personalDetails, ["profileImage", "avatar", "photo", "image", "url"]) ||
+    getF(u.profile, ["image", "avatar", "profileImage", "url"]) ||
+    getF(u.details, ["profileImage", "image", "avatar", "url"]) ||
+    u.employeeId?.userId?.profileImage ||
+    u.userId?.employeeId?.profileImage ||
+    "";
+
+  // Debug log for developer
+  if (process.env.NODE_ENV === "development") {
+    if (!rawImage && u._id) {
+      console.warn("Profile Image missing for user:", u.name || u._id, u);
+    } else if (rawImage) {
+      console.log("Profile Image found:", rawImage);
+    }
+  }
+
+  const rawName =
+    getF(u, ["name", "fullName", "username", "displayName"]) ||
+    getF(u.employeeId, ["name", "fullName"]) ||
+    getF(u.userId, ["name", "fullName"]) ||
+    "Employee";
+
+  const rawDesig =
+    getF(u, ["designation", "roleTitle", "role", "jobTitle", "title"]) ||
+    getF(u.employeeId, ["designation"]) ||
+    getF(u.employeeDetails, ["designation"]) ||
+    "Employee";
+
   return {
     ...u,
-    name: u.name || u.fullName || "Employee",
-    designation: u.designation || u.roleTitle || u.role || "Employee",
-    profileImage: u.profileImage || u.avatar || u.photo || "",
+    name: rawName,
+    designation: rawDesig,
+    profileImage: rawImage,
     joiningDate: resolveJoiningDate(u),
+    basicSalary: u.basicSalary ?? u.salary ?? 0,
+    employmentType: u.employmentType || "On-Roll",
   };
 };
 
@@ -374,6 +404,8 @@ const EmployeeDashboard = () => {
   const [isInsideRadius, setIsInsideRadius] = useState(true);
   const [isLocating, setIsLocating] = useState(false);
   const watchToastRef = useRef(null);
+  const fileInputRef = useRef(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
 
   const profile = useMemo(() => normalizeProfile(meProfile || user), [meProfile, user]);
   const uid = profile?._id || user?._id || null;
@@ -443,7 +475,7 @@ const EmployeeDashboard = () => {
         const sameUpdated = String(prev.updatedAt || "") === String(u.updatedAt || "");
         // if backend returns same profile again -> don't set (prevents render loop)
         if (sameId && sameUpdated) return prev;
-        return u;
+          return u;
       });
     } catch {
       // ignore
@@ -454,6 +486,7 @@ const EmployeeDashboard = () => {
      FETCH DASHBOARD (no blink after first load)
   ========================= */
   const fetchDashboardData = useCallback(
+
     async (isRefresh = false) => {
       if (!uid) return;
 
@@ -571,6 +604,16 @@ const EmployeeDashboard = () => {
     fetchDashboardData(false);
     fetchOnboardingSummary();
   }, [uid, fetchDashboardData, fetchOnboardingSummary]);
+
+  // ✅ Prevent Background Scroll when Sidebar is open (Mobile)
+  useEffect(() => {
+    if (sidebarOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "unset";
+    }
+    return () => { document.body.style.overflow = "unset"; };
+  }, [sidebarOpen]);
 
   useEffect(() => {
     if (!currentPos || !officePos) {
@@ -744,10 +787,15 @@ const EmployeeDashboard = () => {
         <div className="loaderText">Loading Dashboard…</div>
 
         <style>{`
-          .loaderScreen{ min-height: 70vh; display:grid; place-items:center; gap:10px; }
-          .spinBig{ width:46px; height:46px; border-radius:50%; border:5px solid #e5e7eb; border-top-color:#10b981; animation: sp 1s linear infinite; }
-          @keyframes sp{ to{ transform: rotate(360deg);} }
-          .loaderText{ font-weight:950; color:#334155; }
+          .loaderScreen { min-height: 100vh; display: grid; place-items: center; gap: 10px; background: #03050c; }
+          .spinBig { 
+            width: 48px; height: 48px; border-radius: 50%; 
+            border: 3px solid rgba(80, 200, 255, 0.1); 
+            border-top-color: #50c8ff; 
+            animation: sp 1s cubic-bezier(0.4, 0, 0.2, 1) infinite; 
+          }
+          @keyframes sp { to { transform: rotate(360deg); } }
+          .loaderText { font-weight: 800; color: #50c8ff; letter-spacing: 1px; }
         `}</style>
       </div>
     );
@@ -760,6 +808,39 @@ const EmployeeDashboard = () => {
     (typeof profile?.companyId === "string" ? profile.companyId : "");
   const companyIdText = companyIdVal ? String(companyIdVal) : "";
 
+  const handleFileChange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    try {
+      setUploadingImage(true);
+      const formData = new FormData();
+      formData.append("profileImage", file);
+
+      const res = await API.patch("/employee/profile-image", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+
+      toast.success(res.data?.message || "Profile image updated");
+      
+      // Force refresh meProfile so all child components see new image
+      if (res.data?.profileImage) {
+        setMeProfile(prev => ({ ...prev, profileImage: res.data.profileImage }));
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error(err.response?.data?.message || "Failed to upload image");
+    } finally {
+      setUploadingImage(false);
+      // clean up
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
+  const handleAvatarClick = () => {
+    if (fileInputRef.current) fileInputRef.current.click();
+  };
+
   return (
     <div className="dashWrap">
       {/* TOP NAV */}
@@ -769,27 +850,29 @@ const EmployeeDashboard = () => {
             <FaBars />
           </button>
           <div className="brand">
-            SMART<span>HRMS</span>
+            <img src={worknaiLogo} alt="WorknAi" />
+            WorknAi <span>HRMS</span>
           </div>
         </div>
 
         <div className="navRight">
-          <div className="dateBadge">
+          <div className="dateBadge desktop-only">
             <FaCalendarAlt />
             <span>{new Date().toLocaleDateString("en-GB")}</span>
           </div>
 
           <button
-            className="miniBtn"
+            className="refreshBtn"
             onClick={() => fetchDashboardData(true)}
             type="button"
             title="Refresh"
             style={{ opacity: refreshing ? 0.7 : 1 }}
           >
-            <FaRedoAlt /> {refreshing ? "Refreshing…" : "Refresh"}
+            <FaRedoAlt className={refreshing ? "fa-spin" : ""} />
+            <span className="desktop-only">{refreshing ? "Refreshing…" : "Refresh"}</span>
           </button>
 
-          <button className="logoutBtn" onClick={logout} title="Logout">
+          <button className="logoutBtn" onClick={() => logout("/")} title="Logout">
             <FaSignOutAlt />
           </button>
         </div>
@@ -806,16 +889,31 @@ const EmployeeDashboard = () => {
               <FaTimes />
             </div>
 
-            <div className="profileCard">
+            <div className={`profileCard ${uploadingImage ? 'loading-img' : ''}`}>
               <div className="statusDot" data-status={todayStatus}></div>
 
-              <div className="avatarWrap">
+              <div className="avatarWrap" onClick={handleAvatarClick} title="Change Profile Image">
+                {uploadingImage && (
+                  <div className="img-overlay">
+                    <FaSpinner className="spin" />
+                  </div>
+                )}
                 <img
-                  src={getImageUrl(profile?.profileImage)}
+                  src={getImageUrl(profile?.profileImage, profile?.name || user.name)}
                   alt="Profile"
-                  onError={(e) => (e.currentTarget.src = "https://via.placeholder.com/150")}
                 />
+                <div className="edit-hint">
+                  <FaCamera />
+                </div>
               </div>
+              
+              <input 
+                type="file" 
+                ref={fileInputRef} 
+                style={{ display: 'none' }} 
+                accept="image/*"
+                onChange={handleFileChange}
+              />
 
               <div className="userName">{profile?.name || user.name}</div>
               <div className="userRole">{profile?.designation || "Employee"}</div>
@@ -926,6 +1024,15 @@ const EmployeeDashboard = () => {
               </div>
               <div className="statHint">{onboardingSummary.assigned ? "Pending steps" : "Not assigned"}</div>
             </div>
+            <div className="statCard">
+              <div className="statLabel">{profile.employmentType === "Intern" ? "Stipend" : "Basic Salary"}</div>
+              <div className="statValue">
+                {profile.employmentType === "Intern" && profile.basicSalary === 0 
+                  ? "Unpaid" 
+                  : `₹${Number(profile.basicSalary || 0).toLocaleString()}`}
+              </div>
+              <div className="statHint">{profile.employmentType === "Intern" ? "Fixed Monthly" : "Current Package"}</div>
+            </div>
           </div>
 
           <div className="tablesGrid">
@@ -941,7 +1048,7 @@ const EmployeeDashboard = () => {
               </div>
 
               <div className="tableWrap">
-                <table className="table">
+                <table className="table desktop-only">
                   <thead>
                     <tr>
                       <th>Date</th>
@@ -955,16 +1062,12 @@ const EmployeeDashboard = () => {
                   <tbody>
                     {history.length === 0 ? (
                       <tr>
-                        <td colSpan={6} className="empty">
-                          No attendance records yet.
-                        </td>
+                        <td colSpan={6} className="empty"> No attendance records yet. </td>
                       </tr>
                     ) : (
                       history.slice(0, 5).map((h) => {
                         const m = String(h?.mode || "").toLowerCase();
-                        const displayStatus =
-                          m.includes("wfh") ? "WFH" : m.includes("unpaid") ? "Unpaid" : m.includes("paid") ? "Paid" : h.status || "—";
-
+                        const displayStatus = m.includes("wfh") ? "WFH" : m.includes("unpaid") ? "Unpaid" : m.includes("paid") ? "Paid" : h.status || "—";
                         const isManual = h.isManualEntry || h.source === 'MANUAL_HR';
                         const hasMorning = !!h.plannedTasks;
                         const hasDaily = !!h.dailyReport;
@@ -973,44 +1076,70 @@ const EmployeeDashboard = () => {
                           <tr key={h._id || `${h.date}-${h.punchInTime}`}>
                             <td>
                               <div className="bold">{fmtDate(h.date, tz)}</div>
-                              {isManual && (
-                                <span style={{ fontSize: '10px', background: '#e0f2fe', color: '#0284c7', padding: '2px 6px', borderRadius: '4px', border: '1px solid #bae6fd', fontWeight: 800 }}>
-                                  Marked by HR
-                                </span>
-                              )}
+                              {isManual && <span className="hrLabel">Marked by HR</span>}
                             </td>
                             <td className="green">{fmtTime(h.punchInTime, tz)}</td>
                             <td className="red">{fmtTime(h.punchOutTime, tz)}</td>
                             <td>{h.netWorkHours || h.netHours || "--"}</td>
                             <td>
-                              <div style={{ display: 'flex', gap: '6px', fontSize: '11px', fontWeight: 800 }}>
-                                <span title={h.plannedTasks || "No Morning Plan"} style={{
-                                  color: hasMorning ? '#16a34a' : '#94a3b8',
-                                  background: hasMorning ? '#dcfce7' : '#f1f5f9',
-                                  padding: '2px 6px', borderRadius: '4px'
-                                }}>
-                                  M: {hasMorning ? "✅" : "—"}
-                                </span>
-                                <span title={h.dailyReport || "No Daily Report"} style={{
-                                  color: hasDaily ? '#2563eb' : '#94a3b8',
-                                  background: hasDaily ? '#dbeafe' : '#f1f5f9',
-                                  padding: '2px 6px', borderRadius: '4px'
-                                }}>
-                                  E: {hasDaily ? "✅" : "—"}
-                                </span>
+                              <div className="reportPillGroup">
+                                <span title={h.plannedTasks || "No Morning Plan"} className={`reportPill ${hasMorning ? 'ok' : 'none'}`}>M: {hasMorning ? "✅" : "—"}</span>
+                                <span title={h.dailyReport || "No Daily Report"} className={`reportPill ${hasDaily ? 'blue' : 'none'}`}>E: {hasDaily ? "✅" : "—"}</span>
                               </div>
                             </td>
-                            <td>
-                              <span className={`pill ${String(displayStatus || "").toLowerCase().replace(/\s/g, "-")}`}>
-                                {displayStatus}
-                              </span>
-                            </td>
+                            <td><span className={`pill ${String(displayStatus || "").toLowerCase().replace(/\s/g, "-")}`}>{displayStatus}</span></td>
                           </tr>
                         );
                       })
                     )}
                   </tbody>
                 </table>
+
+                {/* Mobile Card View */}
+                <div className="mobile-cards">
+                  {history.length === 0 ? (
+                    <div className="empty">No attendance records yet.</div>
+                  ) : (
+                    history.slice(0, 5).map((h) => {
+                      const m = String(h?.mode || "").toLowerCase();
+                      const displayStatus = m.includes("wfh") ? "WFH" : m.includes("unpaid") ? "Unpaid" : m.includes("paid") ? "Paid" : h.status || "—";
+                      const isManual = h.isManualEntry || h.source === 'MANUAL_HR';
+                      const hasMorning = !!h.plannedTasks;
+                      const hasDaily = !!h.dailyReport;
+
+                      return (
+                        <div key={h._id || `${h.date}-${h.punchInTime}`} className="m-card">
+                          <div className="m-card-top">
+                            <span className="bold">{fmtDate(h.date, tz)}</span>
+                            <span className={`pill ${String(displayStatus || "").toLowerCase().replace(/\s/g, "-")}`}>{displayStatus}</span>
+                          </div>
+                          <div className="m-card-body">
+                            <div className="m-item">
+                              <label>Time:</label>
+                              <div className="valGroup">
+                                <span className="green">{fmtTime(h.punchInTime, tz)}</span>
+                                <span className="sep">-</span>
+                                <span className="red">{fmtTime(h.punchOutTime, tz)}</span>
+                              </div>
+                            </div>
+                            <div className="m-item">
+                              <label>Net Hours:</label>
+                              <span className="bold text-primary">{h.netWorkHours || h.netHours || "--"}</span>
+                            </div>
+                            <div className="m-item">
+                              <label>Reports:</label>
+                              <div className="reportPillGroup">
+                                <span className={`reportPill ${hasMorning ? 'ok' : 'none'}`}>M: {hasMorning ? "✅" : "—"}</span>
+                                <span className={`reportPill ${hasDaily ? 'blue' : 'none'}`}>E: {hasDaily ? "✅" : "—"}</span>
+                              </div>
+                            </div>
+                            {isManual && <div className="m-item mt-2"><span className="hrLabel">Marked by HR</span></div>}
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
               </div>
             </section>
 
@@ -1026,7 +1155,7 @@ const EmployeeDashboard = () => {
               </div>
 
               <div className="tableWrap">
-                <table className="table">
+                <table className="table desktop-only">
                   <thead>
                     <tr>
                       <th>Type</th>
@@ -1036,28 +1165,37 @@ const EmployeeDashboard = () => {
                   </thead>
                   <tbody>
                     {leaves.length === 0 ? (
-                      <tr>
-                        <td colSpan={3} className="empty">
-                          No leave requests yet.
-                        </td>
-                      </tr>
+                      <tr><td colSpan={3} className="empty">No leave requests yet.</td></tr>
                     ) : (
                       leaves.slice(0, 5).map((l) => (
                         <tr key={l._id || `${l.startDate}-${l.endDate}`}>
                           <td className="bold">{normalizeLeaveType(l.leaveType) || "Leave"}</td>
-                          <td>
-                            {fmtDate(l.startDate, tz)} - {fmtDate(l.endDate, tz)}
-                          </td>
-                          <td>
-                            <span className={`pill ${String(l.status || "").toLowerCase()}`}>
-                              {l.status || "Pending"}
-                            </span>
-                          </td>
+                          <td>{fmtDate(l.startDate, tz)} - {fmtDate(l.endDate, tz)}</td>
+                          <td><span className={`pill ${String(l.status || "").toLowerCase()}`}>{l.status || "Pending"}</span></td>
                         </tr>
                       ))
                     )}
                   </tbody>
                 </table>
+
+                {/* Mobile Card View */}
+                <div className="mobile-cards">
+                  {leaves.length === 0 ? (
+                    <div className="empty">No leave requests yet.</div>
+                  ) : (
+                    leaves.slice(0, 5).map((l) => (
+                      <div key={l._id || `${l.startDate}-${l.endDate}`} className="m-card">
+                        <div className="m-card-top">
+                          <span className="bold">{normalizeLeaveType(l.leaveType) || "Leave"}</span>
+                          <span className={`pill ${String(l.status || "").toLowerCase()}`}>{l.status || "Pending"}</span>
+                        </div>
+                        <div className="m-card-body">
+                          <div className="m-item"><label>Duration:</label> <span>{fmtDate(l.startDate, tz)} - {fmtDate(l.endDate, tz)}</span></div>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
               </div>
             </section>
 
@@ -1217,504 +1355,750 @@ const EmployeeDashboard = () => {
         </div>
       )}
 
-      {/* STYLES */}
+
       <style>{`
-        :root{
-          --bg:#f8fafc;
-          --card:#ffffff;
-          --text:#0f172a;
-          --muted:#64748b;
-          --border:#e2e8f0;
-          --primary:#10b981;
-          --primaryDark:#059669;
-          --danger:#ef4444;
+        :root {
+          --bg: #03050c; /* Deeper dark background */
+          --card: rgba(13, 18, 40, 0.65);
+          --text: #ffffff;
+          --muted: rgba(255, 255, 255, 0.6);
+          --border: rgba(80, 200, 255, 0.12);
+          --primary: #50c8ff;
+          --primary-glow: rgba(80, 200, 255, 0.4);
+          --accent-violet: #a78bfa;
+          --accent-pink: #e879f9;
+          --danger: #ef4444;
+          --glass-bg: rgba(255, 255, 255, 0.03);
+          --grad-tri: linear-gradient(90deg, #50c8ff 0%, #a78bfa 55%, #e879f9 100%);
+          --grad-btn: linear-gradient(135deg, #3b82f6, #8b5cf6);
         }
 
-        .dashWrap{ background:var(--bg); min-height:100vh; font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif; color:var(--text); }
-
-        .topNav{
-          position:sticky; top:0; z-index:60;
-          background:rgba(255,255,255,0.92);
-          backdrop-filter: blur(10px);
-          border-bottom:1px solid var(--border);
-          display:flex; align-items:center; justify-content:space-between;
-          padding:14px 18px;
-        }
-        .navLeft{ display:flex; align-items:center; gap:12px; }
-        .menuBtn{
-          display:none;
-          border:none; background:transparent; font-size:18px; cursor:pointer; color:var(--text);
-        }
-        .brand{ font-weight:950; font-size:18px; letter-spacing:-0.2px; }
-        .brand span{ color:var(--primary); }
-        .navRight{ display:flex; align-items:center; gap:10px; }
-        .dateBadge{
-          display:flex; align-items:center; gap:8px;
-          padding:8px 12px;
-          border-radius:999px;
-          background:#ecfdf5;
-          color:var(--primaryDark);
-          font-weight:900;
-          font-size:12px;
-          border:1px solid #d1fae5;
-        }
-        .logoutBtn{
-          width:38px; height:38px;
-          display:grid; place-items:center;
-          border:none; border-radius:12px;
-          cursor:pointer;
-          background:#fee2e2;
-          color:var(--danger);
+        .dashWrap { 
+          background: var(--bg); 
+          min-height: 100vh; 
+          width: 100%;
+          overflow-x: hidden; /* Prevent horizontal scroll gaps */
+          font-family: 'Plus Jakarta Sans', Inter, sans-serif; 
+          color: var(--text);
+          background-image: 
+            radial-gradient(circle at 10% 20%, rgba(80, 200, 255, 0.05) 0%, transparent 40%),
+            radial-gradient(circle at 90% 80%, rgba(167, 139, 250, 0.05) 0%, transparent 40%);
         }
 
-        .backdrop{
-          position:fixed; inset:0;
-          background: rgba(15,23,42,0.35);
-          z-index:70;
+         .topNav {
+          position: sticky;
+          top: 0;
+          z-index: 1001; /* Above almost everything */
+          background: rgba(5, 7, 20, 0.85);
+          backdrop-filter: blur(25px);
+          -webkit-backdrop-filter: blur(25px);
+          border-bottom: 1px solid var(--border);
+          display: flex; 
+          align-items: center; 
+          justify-content: space-between;
+          padding: 10px 20px;
+          height: 64px;
+          box-shadow: 0 4px 30px rgba(0, 0, 0, 0.4);
+          overflow: hidden; /* Prevent nav contents from pushing out */
+        }
+        .navLeft { display: flex; align-items: center; gap: 12px; }
+        .menuBtn {
+          display: none;
+          border: 1px solid var(--border);
+          background: rgba(255,255,255,0.05); 
+          width: 42px; 
+          height: 42px; 
+          border-radius: 12px;
+          font-size: 20px; 
+          cursor: pointer; 
+          color: #fff;
+          align-items: center; justify-content: center;
+          transition: 0.3s;
+        }
+        .menuBtn:hover { background: rgba(80, 200, 255, 0.1); border-color: var(--primary); }
+        
+        .brand { 
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          font-weight: 900; 
+          font-size: 1.3rem; 
+          letter-spacing: -0.5px;
+          background: linear-gradient(90deg, #50c8ff, #a78bfa, #e879f9);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+        }
+        .brand img { 
+          width: 32px; 
+          height: 32px; 
+          object-fit: contain; 
+          filter: drop-shadow(0 0 8px rgba(80, 200, 255, 0.3));
+        }
+        .brand span {
+          background: linear-gradient(90deg, #a78bfa, #e879f9);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
         }
 
-        .layout{
-          max-width: 1400px;
+        .navRight { display: flex; align-items: center; gap: 10px; }
+        .dateBadge {
+          display: flex; align-items: center; gap: 8px;
+          padding: 8px 14px;
+          border-radius: 50px;
+          background: rgba(80, 200, 255, 0.08);
+          color: var(--primary);
+          font-weight: 700;
+          font-size: 0.8rem;
+          border: 1px solid rgba(80, 200, 255, 0.2);
+        }
+        .refreshBtn {
+          background: rgba(255,255,255,0.05);
+          border: 1px solid var(--border);
+          padding: 8px 14px;
+          border-radius: 12px;
+          color: #fff;
+          font-weight: 700;
+          font-size: 0.85rem;
+          display: flex; align-items: center; gap: 8px;
+          cursor: pointer;
+          transition: 0.3s;
+        }
+        .refreshBtn:hover { background: rgba(80, 200, 255, 0.1); border-color: var(--primary); }
+        .logoutBtn {
+          width: 42px; height: 42px;
+          display: grid; place-items: center;
+          border: 1px solid rgba(239, 68, 68, 0.25); 
+          border-radius: 12px;
+          cursor: pointer;
+          background: rgba(239, 68, 68, 0.08);
+          color: #f87171;
+          transition: 0.3s;
+        }
+        .logoutBtn:hover {
+          background: #ef4444;
+          color: #fff;
+          border-color: #ef4444;
+          transform: translateY(-2px);
+        }
+
+        .backdrop {
+          position: fixed; inset: 0;
+          background: rgba(0, 0, 0, 0.7);
+          backdrop-filter: blur(8px);
+          z-index: 1999; /* Below side but above topNav */
+        }
+
+        .layout {
+          max-width: 1440px;
           margin: 0 auto;
-          padding: 18px;
-          display:grid;
-          grid-template-columns: 320px 1fr;
-          gap: 16px;
-          align-items:start;
+          padding: 20px;
+          padding-bottom: 100px; /* Force extra space at very bottom */
+          display: grid;
+          grid-template-columns: 310px 1fr;
+          gap: 20px;
+          align-items: start;
         }
 
-        .side{ position:sticky; top:78px; z-index:80; }
-        .sideInner{ }
-        .sideClose{ display:none; }
-        .profileCard{
-          background:var(--card);
-          border:1px solid var(--border);
-          border-radius:18px;
-          padding:18px;
-          box-shadow: 0 10px 30px rgba(15,23,42,0.04);
-          position:relative;
+        @media (max-width: 1150px) {
+          .layout { grid-template-columns: 1fr; padding: 15px; }
         }
 
-        .avatarWrap{
-          width:84px; height:84px;
-          border-radius:999px;
-          overflow:hidden;
-          margin: 4px auto 10px;
-          border: 2px dashed var(--primary);
-          padding:4px;
-          background:#fff;
-        }
-        .avatarWrap img{
-          width:100%; height:100%;
-          border-radius:999px;
-          object-fit:cover;
-          display:block;
-        }
-
-        .statusDot{
-          width:12px; height:12px; border-radius:999px;
-          position:absolute; top:16px; right:16px;
-          background:#d1d5db;
-          box-shadow: 0 0 0 4px rgba(209,213,219,0.25);
-        }
-        .statusDot[data-status="Working"]{ background:#10b981; box-shadow:0 0 0 4px rgba(16,185,129,0.18); }
-        .statusDot[data-status="On Break"]{ background:#f59e0b; box-shadow:0 0 0 4px rgba(245,158,11,0.18); }
-        .statusDot[data-status="Completed"]{ background:#2563eb; box-shadow:0 0 0 4px rgba(37,99,235,0.18); }
-
-        .userName{ font-weight:950; font-size:18px; margin-top:6px; text-align:center; }
-        .userRole{ color:var(--muted); font-weight:800; margin-top:3px; font-size:13px; text-align:center; }
-
-        .meta{ margin-top:14px; border-top:1px dashed #eef2f7; padding-top:12px; display:grid; gap:10px; }
-        .metaRow{ display:flex; gap:10px; align-items:flex-start; color:var(--muted); font-weight:800; font-size:13px; }
-        .metaRow svg{ color:var(--primary); margin-top:2px; }
-
-        .cid{
-          display:block;
-          margin-top:3px;
-          font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-          font-size:12px;
-          color:#0f172a;
-          font-weight:900;
-          word-break: break-all;
+        .side { position: sticky; top: 84px; z-index: 80; height: calc(100vh - 100px); }
+        .sideInner { height: 100%; overflow-y: auto; padding-bottom: 80px; padding-right: 8px; scrollbar-width: thin; }
+        .sideInner::-webkit-scrollbar { width: 5px; }
+        .sideInner::-webkit-scrollbar-track { background: transparent; }
+        .sideInner::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.15); border-radius: 10px; }
+        
+        .profileCard {
+          background: var(--card);
+          border: 1px solid var(--border);
+          border-radius: 24px;
+          padding: 24px;
+          padding-bottom: 32px; /* Extra room at bottom */
+          backdrop-filter: blur(12px);
+          box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+          position: relative;
         }
 
-        .punchArea{ margin-top:14px; }
-        .dual{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
-        .doneChip{
-          padding:10px 12px;
-          border-radius:14px;
-          border:1px solid #bbf7d0;
-          background:#ecfdf5;
-          color:#065f46;
-          font-weight:950;
-          display:flex; align-items:center; justify-content:center; gap:8px;
+        .avatarWrap {
+          width: 100px; height: 100px;
+          border-radius: 50%;
+          overflow: hidden;
+          margin: 0 auto 16px;
+          border: 4px solid rgba(80, 200, 255, 0.2);
+          padding: 3px;
+          background: rgba(255, 255, 255, 0.08); /* improved backdrop */
+          box-shadow: 0 0 30px rgba(0, 0, 0, 0.5);
+          display: flex; align-items: center; justify-content: center;
+        }
+        .avatarWrap img {
+          width: 100%; height: 100%;
+          border-radius: 50%;
+          object-fit: cover;
+          display: block;
+          transition: 0.3s;
         }
 
-        .btnPrimary{
-          width:100%;
-          border:none;
-          padding:12px 14px;
-          border-radius:14px;
-          background:var(--primary);
-          color:white;
-          font-weight:950;
-          cursor:pointer;
-          display:flex; align-items:center; justify-content:center; gap:10px;
-          box-shadow: 0 14px 28px rgba(16,185,129,0.20);
-          transition: .15s;
-        }
-        .btnPrimary:hover{ background:var(--primaryDark); transform: translateY(-1px); }
-
-        .pulse{ animation:pulse 1.5s infinite; }
-        @keyframes pulse{
-          0%{ box-shadow:0 0 0 0 rgba(16,185,129,.35); }
-          70%{ box-shadow:0 0 0 12px rgba(16,185,129,0); }
-          100%{ box-shadow:0 0 0 0 rgba(16,185,129,0); }
+        .avatarWrap {
+          cursor: pointer;
+          position: relative;
         }
 
-        .btnDanger{
-          width:100%;
-          border:none;
-          padding:12px 14px;
-          border-radius:14px;
-          background:var(--danger);
-          color:white;
-          font-weight:950;
-          cursor:pointer;
-          display:flex; align-items:center; justify-content:center; gap:10px;
-        }
-        .btnGhost{
-          width:100%;
-          border:1px solid var(--border);
-          padding:12px 14px;
-          border-radius:14px;
-          background:white;
-          color:var(--text);
-          font-weight:900;
-          cursor:pointer;
-          display:flex; align-items:center; justify-content:center; gap:10px;
+        .avatarWrap:hover img {
+           filter: brightness(0.6);
         }
 
-        .quickLinks{
-          margin-top:14px;
-          display:grid;
-          grid-template-columns:1fr 1fr;
-          gap:10px;
-        }
-        .quickLinks button{
-          border:1px solid var(--border);
-          background:white;
-          padding:10px 12px;
-          border-radius:14px;
-          font-weight:900;
-          color:var(--muted);
-          cursor:pointer;
-          display:flex; align-items:center; justify-content:center; gap:8px;
-        }
-        .quickLinks button:hover{ border-color:#cbd5e1; color:#0f172a; }
-
-        .main{ display:flex; flex-direction:column; gap:14px; }
-        .hero{
-          background: linear-gradient(135deg, #ecfdf5 0%, #ffffff 65%);
-          border:1px solid #d1fae5;
-          border-radius:18px;
-          padding:16px;
-          display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap;
-        }
-        .heroTitle{ font-weight:950; font-size:18px; }
-        .heroSub{ margin-top:6px; color:var(--muted); font-weight:800; font-size:12px; }
-        .heroRight{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
-        .heroBtn{
-          border:none;
-          padding:10px 12px;
-          border-radius:14px;
-          background:white;
-          border:1px solid var(--border);
-          font-weight:950;
-          cursor:pointer;
-          display:flex; align-items:center; gap:8px;
-        }
-        .heroBtn.dark{
-          background:#0f172a;
-          border-color:#0f172a;
-          color:white;
+        .edit-hint {
+          position: absolute;
+          inset: 0;
+          display: flex; align-items: center; justify-content: center;
+          font-size: 1.5rem;
+          color: #fff;
+          opacity: 0;
+          transition: 0.3s;
+          pointer-events: none;
         }
 
-        .statsGrid{
-          display:grid;
-          grid-template-columns: repeat(4, minmax(0, 1fr));
-          gap:12px;
+        .avatarWrap:hover .edit-hint {
+          opacity: 1;
         }
-        .statCard{
-          background:var(--card);
-          border:1px solid var(--border);
-          border-radius:18px;
-          padding:14px;
-          box-shadow: 0 10px 20px rgba(15,23,42,0.03);
-        }
-        .statLabel{ color:var(--muted); font-weight:900; font-size:12px; text-transform:uppercase; letter-spacing:0.8px; }
-        .statValue{ font-weight:950; font-size:28px; margin-top:6px; }
-        .statHint{ color:var(--muted); font-weight:800; font-size:12px; margin-top:2px; }
 
-        .tablesGrid{
-          display:grid;
+        .img-overlay {
+          position: absolute;
+          inset: 0;
+          background: rgba(0,0,0,0.6);
+          display: grid; place-items: center;
+          z-index: 5;
+          border-radius: 50%;
+        }
+
+        .loading-img {
+          pointer-events: none;
+          opacity: 0.8;
+        }
+
+        .statusDot {
+          width: 14px; height: 14px; border-radius: 50%;
+          position: absolute; top: 24px; right: 24px;
+          background: #64748b;
+          border: 3px solid #050714;
+        }
+        .statusDot[data-status="Working"] { background: #10b981; box-shadow: 0 0 15px rgba(16, 185, 129, 0.5); }
+        .statusDot[data-status="On Break"] { background: #f59e0b; box-shadow: 0 0 15px rgba(245, 158, 11, 0.5); }
+        .statusDot[data-status="Completed"] { background: #3b82f6; box-shadow: 0 0 15px rgba(59, 130, 246, 0.5); }
+
+        .userName { font-weight: 800; font-size: 1.25rem; text-align: center; color: #fff; }
+        .userRole { color: var(--primary); font-weight: 700; margin-top: 4px; font-size: 0.9rem; text-align: center; opacity: 0.9; }
+
+        .meta { margin-top: 20px; border-top: 1px solid var(--border); padding-top: 20px; display: grid; gap: 12px; }
+        .metaRow { display: flex; gap: 12px; align-items: center; color: var(--muted); font-weight: 600; font-size: 0.85rem; }
+        .metaRow svg { color: var(--primary); font-size: 1rem; flex-shrink: 0; }
+
+        .cid {
+          display: block;
+          margin-top: 4px;
+          font-family: 'JetBrains Mono', monospace;
+          font-size: 0.75rem;
+          color: var(--primary);
+          opacity: 0.8;
+        }
+
+        .punchArea { margin-top: 24px; }
+        .dual { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .doneChip {
+          padding: 12px;
+          border-radius: 16px;
+          border: 1px solid rgba(16, 185, 129, 0.2);
+          background: rgba(16, 185, 129, 0.1);
+          color: #10b981;
+          font-weight: 800;
+          display: flex; align-items: center; justify-content: center; gap: 10px;
+        }
+
+        .btnPrimary {
+          width: 100%;
+          border: none;
+          padding: 14px;
+          border-radius: 16px;
+          background: var(--grad-btn);
+          color: white;
+          font-weight: 800;
+          cursor: pointer;
+          display: flex; align-items: center; justify-content: center; gap: 10px;
+          box-shadow: 0 10px 20px -5px rgba(59, 130, 246, 0.5);
+          transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .btnPrimary:hover { transform: translateY(-3px); box-shadow: 0 15px 30px -5px rgba(59, 130, 246, 0.6); }
+
+        .pulse { animation: pulseAnim 2s infinite; }
+        @keyframes pulseAnim {
+          0% { box-shadow: 0 0 0 0 rgba(80, 200, 255, 0.4); }
+          70% { box-shadow: 0 0 0 15px rgba(80, 200, 255, 0); }
+          100% { box-shadow: 0 0 0 0 rgba(80, 200, 255, 0); }
+        }
+
+        .btnDanger {
+          width: 100%;
+          border: none;
+          padding: 14px;
+          border-radius: 16px;
+          background: rgba(239, 68, 68, 0.1);
+          border: 1px solid rgba(239, 68, 68, 0.3);
+          color: #f87171;
+          font-weight: 800;
+          cursor: pointer;
+          display: flex; align-items: center; justify-content: center; gap: 10px;
+          transition: 0.3s;
+        }
+        .btnDanger:hover { background: #ef4444; color: #fff; border-color: #ef4444; }
+
+        .btnGhost {
+          width: 100%;
+          border: 1px solid var(--border);
+          padding: 14px;
+          border-radius: 16px;
+          background: rgba(255, 255, 255, 0.05);
+          color: #fff;
+          font-weight: 700;
+          cursor: pointer;
+          display: flex; align-items: center; justify-content: center; gap: 10px;
+          transition: 0.3s;
+        }
+        .btnGhost:hover { background: rgba(255, 255, 255, 0.1); border-color: var(--primary); }
+
+        .quickLinks {
+          margin-top: 20px;
+          display: grid;
           grid-template-columns: 1fr 1fr;
-          gap:12px;
+          gap: 10px;
         }
-        .panelWide{ grid-column: 1 / -1; }
-
-        .panel{
-          background:var(--card);
-          border:1px solid var(--border);
-          border-radius:18px;
-          padding:14px;
-          box-shadow: 0 10px 20px rgba(15,23,42,0.03);
-          overflow:hidden;
+        .quickLinks button {
+          border: 1px solid var(--border);
+          background: rgba(255, 255, 255, 0.03);
+          padding: 12px;
+          border-radius: 14px;
+          font-weight: 700;
+          color: var(--muted);
+          cursor: pointer;
+          display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;
+          transition: 0.3s;
+          font-size: 0.75rem;
         }
-        .panelHead{
-          display:flex; justify-content:space-between; align-items:center;
-          gap:10px;
-          margin-bottom:10px;
-        }
-        .panelTitle{
-          font-weight:950;
-          display:flex; align-items:center; gap:10px;
-        }
-        .linkBtn{
-          border:none;
-          background:#f1f5f9;
-          color:#0f172a;
-          font-weight:900;
-          padding:8px 10px;
-          border-radius:12px;
-          cursor:pointer;
-        }
-        .hintBox{
-          background:#f8fafc;
-          border:1px dashed #e2e8f0;
-          padding:10px 12px;
-          border-radius:14px;
-          margin-bottom:10px;
-          font-weight:800;
-          color:#334155;
-          font-size:12px;
+        .quickLinks button:hover { 
+          background: rgba(80, 200, 255, 0.08); 
+          color: var(--primary); 
+          border-color: var(--primary);
+          transform: translateY(-2px);
         }
 
-        .tableWrap{ overflow:auto; }
-        .table{
-          width:100%;
-          border-collapse:collapse;
-          min-width: 560px;
+        .main { display: flex; flex-direction: column; gap: 16px; }
+        .hero {
+          background: linear-gradient(135deg, rgba(80, 200, 255, 0.1) 0%, rgba(167, 139, 250, 0.05) 100%);
+          border: 1px solid var(--border);
+          border-radius: 20px;
+          padding: 16px 20px;
+          display: flex; 
+          align-items: center; 
+          justify-content: space-between; 
+          gap: 16px; 
+          flex-wrap: wrap;
+          backdrop-filter: blur(10px);
+          min-height: auto;
         }
-        .table thead th{
-          text-align:left;
-          padding:12px;
-          font-size:11px;
-          color:var(--muted);
-          text-transform:uppercase;
-          letter-spacing:0.8px;
-          border-bottom:1px solid #f1f5f9;
+        .heroLeft { flex: 1; min-width: 200px; }
+        .heroTitle { font-weight: 900; font-size: 1.25rem; color: #fff; line-height: 1.2; letter-spacing: -0.5px; }
+        .heroSub { margin-top: 4px; color: var(--muted); font-weight: 600; font-size: 0.75rem; }
+        .heroSub b { color: var(--primary); }
+        .heroRight { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+        .heroBtn {
+          border: none;
+          padding: 12px 20px;
+          border-radius: 14px;
+          background: rgba(255,255,255,0.05);
+          border: 1px solid var(--border);
+          color: #fff;
+          font-weight: 700;
+          cursor: pointer;
+          display: flex; align-items: center; gap: 10px;
+          transition: 0.3s;
         }
-        .table tbody td{
-          padding:12px;
-          border-bottom:1px solid #f8fafc;
-          font-weight:800;
-          font-size:13px;
-          color:#0f172a;
-          vertical-align:top;
-        }
-        .table tbody tr:hover{ background:#fcfcfd; }
-        .empty{ text-align:center; color:var(--muted) !important; font-weight:900; padding:18px !important; }
-
-        .bold{ font-weight:950; }
-        .muted{ color:var(--muted); font-weight:800; font-size:12px; margin-top:4px; }
-        .green{ color:#16a34a; }
-        .red{ color:#ef4444; }
-
-        .pill{
-          display:inline-flex;
-          align-items:center;
-          padding:6px 10px;
-          border-radius:999px;
-          font-size:11px;
-          font-weight:950;
-          border:1px solid var(--border);
-          background:#f8fafc;
-          text-transform:capitalize;
-        }
-        .pill.present, .pill.approved, .pill.verified{
-          background:#ecfdf5;
-          border-color:#bbf7d0;
-          color:#065f46;
-        }
-        .pill.pending, .pill.in-progress{
-          background:#fffbeb;
-          border-color:#fde68a;
-          color:#92400e;
-        }
-        .pill.rejected, .pill.absent, .pill.unpaid{
-          background:#fee2e2;
-          border-color:#fecaca;
-          color:#991b1b;
-        }
-        .pill.wfh{
-          background:#eef2ff;
-          border-color:#c7d2fe;
-          color:#3730a3;
-        }
-        .pill.paid{
-          background:#ecfdf5;
-          border-color:#bbf7d0;
-          color:#065f46;
+        .heroBtn:hover { background: rgba(80, 200, 255, 0.1); border-color: var(--primary); }
+        .heroBtn.dark {
+          background: var(--grad-btn);
+          border: none;
+          box-shadow: 0 8px 16px rgba(59, 130, 246, 0.3);
         }
 
-        .taskCell{ display:flex; flex-direction:column; gap:2px; }
+        .statsGrid {
+          display: grid;
+          grid-template-columns: repeat(4, minmax(0, 1fr));
+          gap: 12px;
+        }
+        .statCard {
+          background: var(--card);
+          border: 1px solid var(--border);
+          border-radius: 20px;
+          padding: 20px;
+          backdrop-filter: blur(10px);
+          transition: 0.3s;
+        }
+        .statCard:hover { transform: translateY(-5px); border-color: var(--primary); }
+        .statLabel { color: var(--muted); font-weight: 800; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; }
+        .statValue { font-weight: 950; font-size: 2rem; margin-top: 8px; color: #fff; }
+        .statHint { color: var(--primary); font-weight: 700; font-size: 0.8rem; margin-top: 4px; opacity: 0.8; }
 
-        .miniBtn{
-          border:1px solid var(--border);
-          background:#fff;
-          padding:8px 10px;
-          border-radius:12px;
-          font-weight:950;
-          cursor:pointer;
-          display:inline-flex;
-          align-items:center;
-          justify-content:center;
-          gap:8px;
+        .tablesGrid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 20px;
         }
-        .greenBtn{ background:#ecfdf5; border-color:#bbf7d0; color:#065f46; }
-        .blueBtn{ background:#eff6ff; border-color:#bfdbfe; color:#1d4ed8; }
-        .okText{ font-weight:950; color:#065f46; }
+        .panelWide { grid-column: 1 / -1; }
 
-        .modalOverlay{
-          position:fixed; inset:0;
-          background:rgba(15,23,42,.45);
-          display:flex; align-items:center; justify-content:center;
-          z-index:1000;
-          padding:16px;
+        .panel {
+          background: var(--card);
+          border: 1px solid var(--border);
+          border-radius: 24px;
+          padding: 20px;
+          backdrop-filter: blur(10px);
+          overflow: hidden;
+          box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
         }
-        .modalCard{
-          width:100%;
-          max-width:540px;
-          background:#fff;
-          border:1px solid var(--border);
-          border-radius:18px;
-          box-shadow: 0 30px 80px rgba(0,0,0,.18);
-          padding:14px;
+        .panelHead {
+          display: flex; justify-content: space-between; align-items: center;
+          gap: 12px;
+          margin-bottom: 20px;
+          padding-bottom: 12px;
+          border-bottom: 1px solid var(--border);
         }
-        .modalCard.wide{ max-width:1100px; }
-        .modalHead{
-          display:flex; justify-content:space-between; align-items:center;
-          gap:10px; margin-bottom:10px;
+        .panelTitle {
+          font-weight: 800;
+          font-size: 1.1rem;
+          display: flex; align-items: center; gap: 12px;
+          color: #fff;
         }
-        .modalTitle{ font-weight:1000; }
-        .iconBtn{
-          width:38px; height:38px;
-          border-radius:12px;
-          border:1px solid var(--border);
-          background:#fff;
-          cursor:pointer;
-          display:grid; place-items:center;
+        .panelTitle svg { color: var(--primary); }
+        .linkBtn {
+          border: none;
+          background: rgba(255, 255, 255, 0.05);
+          color: var(--primary);
+          font-weight: 700;
+          padding: 8px 16px;
+          border-radius: 12px;
+          cursor: pointer;
+          transition: 0.3s;
         }
-        .modalText{
-          width:100%;
-          min-height:120px;
-          border:1px solid var(--border);
-          border-radius:14px;
-          padding:12px;
-          outline:none;
-          font-weight:800;
-          color:#0f172a;
-          margin-bottom:12px;
+        .linkBtn:hover { background: rgba(80, 200, 255, 0.1); }
+
+        .hintBox {
+          background: rgba(80, 200, 255, 0.05);
+          border: 1px dashed rgba(80, 200, 255, 0.2);
+          padding: 12px 16px;
+          border-radius: 16px;
+          margin-bottom: 16px;
+          font-weight: 600;
+          color: #cbd5e1;
+          font-size: 0.85rem;
+        }
+        .hintBox b { color: var(--primary); }
+
+        .tableWrap { overflow: auto; }
+        .mobile-cards { display: none; }
+        .table {
+          width: 100%;
+          border-collapse: collapse;
+          min-width: 600px;
+        }
+        .table thead th {
+          text-align: left;
+          padding: 12px 16px;
+          font-size: 0.75rem;
+          color: var(--muted);
+          text-transform: uppercase;
+          letter-spacing: 1px;
+          border-bottom: 1px solid var(--border);
+        }
+        .table tbody td {
+          padding: 16px;
+          border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+          font-weight: 600;
+          font-size: 0.9rem;
+          color: #e2e8f0;
+          vertical-align: middle;
+        }
+        .table tbody tr:hover { background: rgba(255, 255, 255, 0.02); }
+        .empty { text-align: center; color: var(--muted) !important; font-weight: 800; padding: 32px !important; }
+
+        .bold { font-weight: 800; color: #fff; }
+        .muted { color: var(--muted); font-weight: 600; font-size: 0.8rem; margin-top: 4px; }
+        .green { color: #10b981; }
+        .red { color: #ef4444; }
+
+        .pill {
+          display: inline-flex;
+          align-items: center;
+          padding: 6px 12px;
+          border-radius: 50px;
+          font-size: 0.75rem;
+          font-weight: 800;
+          border: 1px solid var(--border);
+          background: rgba(255, 255, 255, 0.05);
+          text-transform: capitalize;
+        }
+        .pill.present, .pill.approved, .pill.verified {
+          background: rgba(16, 185, 129, 0.1);
+          border-color: rgba(16, 185, 129, 0.3);
+          color: #10b981;
+        }
+        .pill.pending, .pill.in-progress {
+          background: rgba(245, 158, 11, 0.1);
+          border-color: rgba(245, 158, 11, 0.3);
+          color: #f59e0b;
+        }
+        .pill.rejected, .pill.absent, .pill.unpaid {
+          background: rgba(239, 68, 68, 0.1);
+          border-color: rgba(239, 68, 68, 0.3);
+          color: #f87171;
+        }
+        .pill.wfh {
+          background: rgba(99, 102, 241, 0.1);
+          border-color: rgba(99, 102, 241, 0.3);
+          color: #818cf8;
         }
 
-        .locStrip{ display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:12px; }
-        .locPill{
-          flex:1;
-          display:flex; align-items:center; gap:10px;
-          border-radius:14px;
-          padding:10px 12px;
-          border:1px solid var(--border);
-          background:#f8fafc;
-          font-weight:900;
-          color:#334155;
-          min-width:260px;
-        }
-        .locPill.ok{ background:#ecfdf5; border-color:#bbf7d0; color:#065f46; }
-        .locPill.bad{ background:#fee2e2; border-color:#fecaca; color:#991b1b; }
-        .locMeta{ display:flex; gap:10px; align-items:center; color:var(--muted); font-weight:900; }
+        .taskCell { display: flex; flex-direction: column; gap: 4px; }
 
-        .verifyGrid{
-          display:grid;
+        .miniBtn {
+          border: 1px solid var(--border);
+          background: rgba(255, 255, 255, 0.05);
+          padding: 8px 12px;
+          border-radius: 12px;
+          font-weight: 800;
+          color: #fff;
+          cursor: pointer;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          transition: 0.3s;
+          font-size: 0.8rem;
+        }
+        .miniBtn:hover { border-color: var(--primary); background: rgba(80, 200, 255, 0.1); }
+        .greenBtn { color: #10b981; border-color: rgba(16, 185, 129, 0.3); }
+        .blueBtn { color: #3b82f6; border-color: rgba(59, 130, 246, 0.3); }
+        .okText { font-weight: 800; color: #10b981; }
+
+        .modalOverlay {
+          position: fixed; inset: 0;
+          background: rgba(0, 0, 0, 0.8);
+          backdrop-filter: blur(8px);
+          display: flex; align-items: center; justify-content: center;
+          z-index: 1000;
+          padding: 24px;
+        }
+        .modalCard {
+          width: 100%;
+          max-width: 540px;
+          background: #0a0f1e;
+          border: 1px solid var(--border);
+          border-radius: 28px;
+          box-shadow: 0 30px 60px rgba(0, 0, 0, 0.5);
+          padding: 24px;
+        }
+        .modalCard.wide { max-width: 1100px; }
+        .modalHead {
+          display: flex; justify-content: space-between; align-items: center;
+          gap: 12px; margin-bottom: 24px;
+        }
+        .modalTitle { font-weight: 900; font-size: 1.25rem; color: #fff; }
+        .iconBtn {
+          width: 40px; height: 40px;
+          border-radius: 12px;
+          border: 1px solid var(--border);
+          background: rgba(255, 255, 255, 0.05);
+          color: #fff;
+          cursor: pointer;
+          display: grid; place-items: center;
+          transition: 0.3s;
+        }
+        .iconBtn:hover { background: rgba(255, 255, 255, 0.15); }
+        
+        .modalText {
+          width: 100%;
+          min-height: 140px;
+          background: rgba(255, 255, 255, 0.03);
+          border: 1px solid var(--border);
+          border-radius: 16px;
+          padding: 16px;
+          outline: none;
+          font-weight: 600;
+          color: #fff;
+          font-size: 1rem;
+          margin-bottom: 20px;
+          resize: none;
+        }
+        .modalText:focus { border-color: var(--primary); box-shadow: 0 0 0 2px rgba(80, 200, 255, 0.2); }
+
+        .locStrip { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; margin-bottom: 20px; }
+        .locPill {
+          flex: 1;
+          display: flex; align-items: center; gap: 12px;
+          border-radius: 16px;
+          padding: 12px 16px;
+          border: 1px solid var(--border);
+          background: rgba(255, 255, 255, 0.03);
+          font-weight: 700;
+          color: #fff;
+          min-width: 280px;
+        }
+        .locPill.ok { background: rgba(16, 185, 129, 0.1); border-color: rgba(16, 185, 129, 0.3); color: #10b981; }
+        .locPill.bad { background: rgba(239, 68, 68, 0.1); border-color: rgba(239, 68, 68, 0.3); color: #f87171; }
+        .locMeta { display: flex; gap: 16px; align-items: center; color: var(--muted); font-weight: 700; }
+
+        .verifyGrid {
+          display: grid;
           grid-template-columns: 1.4fr 1fr;
-          gap:12px;
-          align-items:start;
+          gap: 20px;
+          align-items: start;
         }
-        .mapBox{
-          position:relative;
-          border:1px solid var(--border);
-          border-radius:16px;
-          overflow:hidden;
-          min-height:260px;
-          background:#fff;
+        .mapBox {
+          position: relative;
+          border: 1px solid var(--border);
+          border-radius: 20px;
+          overflow: hidden;
+          min-height: 300px;
+          background: #000;
         }
-        .mapFallback{
-          height:260px;
-          display:grid;
-          place-items:center;
-          color:var(--muted);
-          font-weight:900;
+        .mapFallback {
+          height: 300px;
+          display: grid;
+          place-items: center;
+          color: var(--muted);
+          font-weight: 800;
+          background: rgba(255,255,255,0.02);
         }
-        .gpsOverlay{
-          position:absolute; inset:0;
-          display:flex; align-items:center; justify-content:center;
-          gap:10px;
-          font-weight:1000;
-          color:#0f172a;
-          background:rgba(255,255,255,.6);
-          backdrop-filter: blur(6px);
+        .gpsOverlay {
+          position: absolute; inset: 0;
+          display: flex; align-items: center; justify-content: center;
+          gap: 12px;
+          font-weight: 800;
+          color: #fff;
+          background: rgba(5, 7, 20, 0.7);
+          backdrop-filter: blur(8px);
         }
-        .spin{ animation:spin 1s linear infinite; }
-        @keyframes spin{ to{ transform:rotate(360deg);} }
+        
+        .faceWrap { 
+          position: relative; 
+          border: 1px solid var(--border); 
+          border-radius: 20px; 
+          padding: 12px; 
+          background: rgba(255, 255, 255, 0.02); 
+        }
+        .faceWrap.blocked { opacity: 0.5; }
+        .blockOverlay {
+          position: absolute; inset: 0;
+          display: flex; align-items: center; justify-content: center;
+          text-align: center;
+          padding: 24px;
+          background: rgba(0, 0, 0, 0.8);
+          color: #fff;
+          font-weight: 800;
+          border-radius: 20px;
+          z-index: 10;
+        }
 
-        .warnBox{
-          padding:12px;
-          background:#fffbeb;
-          border:1px solid #fde68a;
-          color:#92400e;
-          font-weight:900;
-          border-radius:14px;
-          margin:10px;
+        @media (max-width: 1150px) {
+          .layout { grid-template-columns: 1fr; padding: 12px; }
+          .side {
+            position: fixed; top: 0; left: 0; bottom: 0;
+            width: 300px; z-index: 2000;
+            transform: translateX(-105%);
+            transition: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            height: 100vh;
+            background: #050714;
+          }
+          .side.open { transform: translateX(0); box-shadow: 20px 0 50px rgba(0,0,0,0.8); }
+          .sideInner { 
+            height: 100%; 
+            padding: 12px; 
+            overflow-y: auto; 
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            padding-bottom: 150px; /* Huge space to ensure nothing is hidden */
+          }
+          .sideClose { display: flex; width: 40px; height: 40px; border-radius: 10px; border: 1px solid var(--border); background: rgba(255,255,255,0.05); align-items: center; justify-content: center; margin-bottom: 5px; cursor: pointer; color: #fff; flex-shrink: 0; }
+          .menuBtn { display: flex; }
+          .statsGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+          .statCard { padding: 14px; }
+          .statValue { font-size: 1.4rem; }
+          .tablesGrid { grid-template-columns: 1fr; gap: 12px; }
+          
+          .profileCard { padding: 12px; border-radius: 18px; margin-bottom: 10px; }
+          .avatarWrap { width: 60px; height: 60px; margin-bottom: 8px; border-width: 2px; }
+          .userName { font-size: 1rem; }
+          .userRole { font-size: 0.75rem; margin-top: 2px; }
+          .meta { margin-top: 10px; padding-top: 10px; gap: 4px; }
+          .metaRow { font-size: 0.7rem; gap: 8px; }
+          .metaRow svg { font-size: 0.8rem; }
+          .punchArea { margin-top: 10px; }
+          .btnPrimary, .btnDanger, .btnGhost { padding: 8px; font-size: 0.8rem; border-radius: 12px; }
+          .quickLinks { gap: 5px; margin-top: 8px; }
+          .quickLinks button { padding: 6px; font-size: 0.65rem; border-radius: 10px; }
+          .quickLinks button svg { font-size: 14px; }
         }
 
-        .faceWrap{ position:relative; border:1px solid var(--border); border-radius:16px; padding:10px; background:#fff; }
-        .blockOverlay{
-          position:absolute; inset:0;
-          display:flex; align-items:center; justify-content:center;
-          text-align:center;
-          padding:14px;
-          background:rgba(15,23,42,.65);
-          color:#fff;
-          font-weight:1000;
-          border-radius:16px;
+          .m-card { 
+            background: rgba(255, 255, 255, 0.03); 
+            border: 1px solid var(--border); 
+            border-radius: 12px; 
+            padding: 12px; 
+            transition: 0.2s;
+          }
+          .m-card:active { border-color: var(--primary); background: rgba(80, 200, 255, 0.05); }
+          .m-card-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+          .m-card-top .bold { font-size: 0.9rem; }
+          .m-card-body { display: flex; flex-direction: column; gap: 4px; font-size: 0.8rem; color: var(--muted); }
+          .m-item { display: flex; justify-content: space-between; align-items: center; min-height: 24px; }
+          .m-item label { color: var(--muted); font-weight: 600; font-size: 0.75rem; }
+          .m-item .bold { color: #fff; font-weight: 800; }
+          .valGroup { display: flex; align-items: center; gap: 4px; font-weight: 700; font-size: 0.85rem; }
+          .sep { color: var(--muted); opacity: 0.5; }
+          .text-primary { color: var(--primary); }
+          .mt-2 { margin-top: 8px; }
+          .hrLabel { font-size: 9px; background: #e0f2fe; color: #0284c7; padding: 1px 4px; border-radius: 4px; border: 1px solid #bae6fd; font-weight: 800; }
+          .reportPillGroup { display: flex; gap: 4px; }
+          .reportPill { padding: 2px 6px; border-radius: 6px; font-size: 10px; font-weight: 800; border: 1px solid rgba(255,255,255,0.05); }
+          .reportPill.ok { color: #10b981; background: rgba(16, 185, 129, 0.1); border-color: rgba(16, 185, 129, 0.2); }
+          .reportPill.blue { color: #50c8ff; background: rgba(80, 200, 255, 0.1); border-color: rgba(80, 200, 255, 0.2); }
+          .reportPill.none { color: var(--muted); background: rgba(255, 255, 255, 0.03); opacity: 0.6; }
         }
-        .smallHint{ margin-top:10px; color:var(--muted); font-weight:800; font-size:12px; }
-
-        @media (max-width: 1024px){
-          .layout{ grid-template-columns: 1fr; }
-          .side{ position:fixed; top:0; left:0; height:100vh; width:320px; transform:translateX(-110%); transition:.2s; background:transparent; z-index:90; }
-          .side.open{ transform:translateX(0); }
-          .sideInner{ height:100%; padding:18px; background:var(--bg); }
-          .sideClose{ display:flex; width:40px; height:40px; border-radius:12px; border:1px solid var(--border); background:#fff; align-items:center; justify-content:center; margin-bottom:10px; cursor:pointer; }
-          .menuBtn{ display:inline-flex; }
-          .statsGrid{ grid-template-columns: repeat(2, minmax(0,1fr)); }
-          .tablesGrid{ grid-template-columns: 1fr; }
-          .verifyGrid{ grid-template-columns: 1fr; }
-          .table{ min-width: 520px; }
+        @media (max-width: 640px) {
+          .statsGrid { grid-template-columns: repeat(2, 1fr); }
+          .hero { padding: 15px; }
+          .heroTitle { font-size: 1.15rem; }
+          .topNav { padding: 8px 12px; height: 60px; }
+          .heroRight { width: 100%; margin-top: 5px; }
+          .heroBtn { flex: 1; justify-content: center; padding: 8px 12px; font-size: 0.75rem; border-radius: 10px; }
+          .brand span { display: none; }
         }
-        @media (max-width: 560px){
-          .statsGrid{ grid-template-columns: 1fr; }
-          .table{ min-width: 520px; }
+        @media (max-width: 480px) {
+           .layout { padding: 10px; }
+           .statsGrid { grid-template-columns: 1fr; }
+           .hero { flex-direction: column; align-items: flex-start; border-radius: 16px; padding: 12px; gap: 10px; }
+           .heroTitle { font-size: 1.1rem; }
+           .heroSub { font-size: 0.7rem; }
+           .heroRight { gap: 8px; margin-top: 0; width: 100%; }
+           .heroBtn { width: 100%; flex: none; font-size: 0.75rem; padding: 10px; }
+           .topNav { padding: 8px 8px; height: 56px; gap: 4px; }
+           .brand { font-size: 1rem; gap: 4px; }
+           .brand img { width: 22px; height: 22px; }
+           .brand span { display: none; }
+           .refreshBtn span { display: none; } 
+           .refreshBtn { width: 34px; height: 34px; padding: 0; justify-content: center; border-radius: 8px; font-size: 12px; }
+           .navRight { gap: 4px; }
+           .dateBadge { padding: 4px 8px; font-size: 0.6rem; border-radius: 4px; }
+           .dateBadge svg { display: none; } /* Hide icon to save space on tiny screens */
+           .logoutBtn { width: 34px; height: 34px; border-radius: 8px; font-size: 12px; }
         }
       `}</style>
     </div>

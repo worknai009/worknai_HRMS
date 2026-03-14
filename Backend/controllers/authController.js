@@ -112,6 +112,12 @@ const superAdminLogin = async (req, res) => {
     const envEmail = process.env.SUPER_ADMIN_EMAIL;
     const envPass = process.env.SUPER_ADMIN_PASSWORD;
 
+    console.log("DEBUG LOGIN:", {
+      receivedEmail: email,
+      envEmail: envEmail,
+      passMatch: String(password) === String(envPass)
+    });
+
     if (!envEmail || !envPass) {
       return res.status(500).json({ message: 'Super Admin not configured on server.' });
     }
@@ -138,7 +144,7 @@ const superAdminLogin = async (req, res) => {
 /* ================= 3) EMPLOYEE REGISTRATION (PUBLIC) ================= */
 const registerEmployee = async (req, res) => {
   try {
-    const { name, email, mobile, password, designation, companyId, faceDescriptor } = req.body || {};
+    const { name, email, mobile, password, designation, companyId, faceDescriptor, employmentType } = req.body || {};
     const e = normalizeEmail(email);
 
     if (!name || !e || !password || !companyId) {
@@ -173,6 +179,7 @@ const registerEmployee = async (req, res) => {
       status: 'Pending',
       isApproved: false,
       profileImage: imagePath,
+      employmentType: employmentType || 'On-Roll',
       faceDescriptor: faceDescriptor || '[]',
       faceDescriptorVec: vecBuf
     });

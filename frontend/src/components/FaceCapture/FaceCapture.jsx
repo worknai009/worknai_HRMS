@@ -142,19 +142,22 @@ const FaceCapture = ({ onCapture, btnText = "Verify Face" }) => {
       {/* ================= STYLES ================= */}
       <style>{`
         .face-box {
-          background: #fff;
-          border-radius: 18px;
-          border: 1px solid #e2e8f0;
+          background: rgba(13, 17, 34, 0.85);
+          border-radius: 28px;
+          border: 1px solid rgba(255, 255, 255, 0.1);
           overflow: hidden;
-          max-width: 380px;
+          max-width: 420px;
           margin: auto;
           position: relative;
-          box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+          box-shadow: 0 40px 80px rgba(0,0,0,0.6);
+          backdrop-filter: blur(20px);
+          -webkit-backdrop-filter: blur(20px);
         }
 
         .webcam {
           width: 100%;
           height: auto;
+          display: block;
         }
 
         .overlay {
@@ -167,83 +170,122 @@ const FaceCapture = ({ onCapture, btnText = "Verify Face" }) => {
         }
 
         .face-guide {
-          width: 210px;
-          height: 270px;
-          border: 2px dashed rgba(37,99,235,0.6);
+          width: 240px;
+          height: 300px;
+          border: 2px solid rgba(80, 200, 255, 0.5);
           border-radius: 50%;
-          box-shadow: 0 0 0 999px rgba(0,0,0,0.45);
+          box-shadow: 0 0 0 9999px rgba(5, 7, 20, 0.7);
+          position: relative;
+        }
+
+        .face-guide::after {
+          content: "";
+          position: absolute; inset: -4px;
+          border: 2px dashed rgba(167, 139, 250, 0.6);
+          border-radius: 50%;
+          animation: spin 20s linear infinite;
         }
 
         .capture-btn {
           position: absolute;
-          bottom: 18px;
+          bottom: 24px;
           left: 50%;
           transform: translateX(-50%);
-          background: #2563eb;
+          background: linear-gradient(135deg, #3b82f6, #8b5cf6, #e879f9);
           color: #fff;
           border: none;
-          padding: 12px 24px;
-          border-radius: 999px;
-          font-weight: 700;
+          padding: 14px 28px;
+          border-radius: 18px;
+          font-weight: 900;
           display: flex;
           align-items: center;
-          gap: 10px;
+          gap: 12px;
           cursor: pointer;
-          transition: 0.3s;
+          transition: 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+          box-shadow: 0 15px 35px rgba(139, 92, 246, 0.4);
+          text-transform: uppercase;
+          letter-spacing: 1px;
+          font-size: 13px;
+          white-space: nowrap;
         }
 
-        .capture-btn:hover { background: #1e40af; }
-        .capture-btn:disabled { opacity: 0.7; }
+        .capture-btn:hover { 
+          transform: translateX(-50%) translateY(-3px); 
+          box-shadow: 0 20px 50px rgba(139, 92, 246, 0.6);
+          filter: brightness(1.1);
+        }
+        .capture-btn:disabled { 
+          opacity: 0.7; 
+          cursor: not-allowed;
+          background: #475569;
+          box-shadow: none;
+        }
 
         .preview {
           text-align: center;
-          background: #000;
-          padding-bottom: 20px;
+          background: #050714;
+          padding-bottom: 24px;
         }
 
         .preview img {
           width: 100%;
-          filter: grayscale(10%);
+          border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+          margin-bottom: 15px;
         }
 
         .verified {
           display: inline-flex;
           align-items: center;
-          gap: 6px;
-          background: #16a34a;
-          color: #fff;
-          padding: 6px 14px;
+          gap: 8px;
+          background: rgba(16, 185, 129, 0.1);
+          border: 1px solid rgba(16, 185, 129, 0.3);
+          color: #10b981;
+          padding: 8px 18px;
           border-radius: 999px;
-          font-size: 0.75rem;
-          font-weight: 700;
-          margin-top: -14px;
+          font-size: 12px;
+          font-weight: 900;
+          text-transform: uppercase;
+          letter-spacing: 1px;
+          box-shadow: 0 0 20px rgba(16, 185, 129, 0.2);
         }
 
         .reset-btn {
-          margin-top: 10px;
-          background: transparent;
-          border: 1px solid #64748b;
-          color: #64748b;
-          padding: 6px 14px;
-          border-radius: 8px;
+          margin-top: 15px;
+          background: rgba(255, 255, 255, 0.05);
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          color: rgba(255, 255, 255, 0.6);
+          padding: 8px 20px;
+          border-radius: 12px;
           cursor: pointer;
-          font-size: 0.8rem;
+          font-size: 13px;
+          font-weight: 700;
+          display: block;
+          margin-left: auto; margin-right: auto;
+          transition: 0.3s;
         }
+        .reset-btn:hover { background: rgba(255, 255, 255, 0.1); color: #fff; border-color: #50c8ff; }
 
         .fc-loader {
-          padding: 40px;
+          padding: 60px 40px;
           text-align: center;
-          color: #475569;
+          background: rgba(13, 17, 34, 0.85);
+          border-radius: 28px;
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          color: rgba(255, 255, 255, 0.6);
+          max-width: 420px;
+          margin: auto;
         }
+        .fc-loader p { font-weight: 800; font-size: 14px; margin: 0; letter-spacing: 0.5px; }
 
         .spinner {
-          width: 34px;
-          height: 34px;
-          border: 4px solid #e5e7eb;
-          border-top-color: #2563eb;
+          width: 48px;
+          height: 48px;
+          border: 4px solid rgba(255, 255, 255, 0.05);
+          border-top-color: #50c8ff;
           border-radius: 50%;
-          margin: 0 auto 15px;
-          animation: spin 1s linear infinite;
+          margin: 0 auto 20px;
+          animation: spin 0.8s linear infinite;
+          box-shadow: 0 0 20px rgba(80, 200, 255, 0.2);
         }
 
         @keyframes spin {

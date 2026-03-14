@@ -1,15 +1,15 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import worknaiLogo from "../../assets/worknai logo.png";
 import {
   FaBars,
   FaTimes,
   FaUserCircle,
   FaHandshake,
   FaSignOutAlt,
-  FaShieldAlt,
   FaChevronDown,
-  FaBriefcase // ✅ Added Icon for Careers
 } from "react-icons/fa";
+
 import { useAuth } from "../../context/AuthContext";
 import { PUBLIC_NAV, ROLE_NAV } from "../../config/navConfig";
 
@@ -47,6 +47,17 @@ const Navbar = () => {
     setRoleMenuOpen(false);
   }, [location.pathname]);
 
+  // ✅ Prevent Background Scroll when menu is open
+  useEffect(() => {
+    if (menuOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "unset";
+    }
+    // Cleanup on unmount
+    return () => { document.body.style.overflow = "unset"; };
+  }, [menuOpen]);
+
   const closeMenu = () => setMenuOpen(false);
 
   const goDashboard = () => {
@@ -65,11 +76,17 @@ const Navbar = () => {
     return ROLE_NAV[user.role] || [];
   }, [user?.role]);
 
-  // ✅ Combine Public Nav with Careers Link explicitly
+  // ✅ Combine Public Nav with Careers and Partner Links explicitly
   const publicLinks = [
-    ...PUBLIC_NAV,
-    { label: "Careers", to: "/careers", icon: FaBriefcase }
+    { label: "Home", to: "/" },
+    { label: "Features", to: "/features" },
+    { label: "Services", to: "/services" },
+    { label: "About", to: "/about" },
+    { label: "Free Demo", to: "/contact" },
+    { label: "Partner", to: "/partner-with-us" },
+    { label: "Careers", to: "/careers" }
   ];
+
 
   // If on a dashboard page, show role links in mobile menu, else show public links
   const mobileMenuLinks = showRoleNav ? roleLinks : publicLinks;
@@ -82,34 +99,28 @@ const Navbar = () => {
       <div className="nav-container">
         {/* LOGO */}
         <Link to="/" className="logo" onClick={closeMenu}>
-          <div className="logo-icon">
-            <FaShieldAlt />
-          </div>
-          <span>
-            SMART<span>HRMS</span>
+          <img src={worknaiLogo} alt="WorknAI HRMS Logo" className="logo-img" />
+          <span className="logo-text">
+            WorknAi <span>HRMS</span>
           </span>
         </Link>
 
+        {/* MOBILE OVERLAY / BACKDROP */}
+        {menuOpen && (
+          <div className="nav-overlay" onClick={closeMenu} />
+        )}
+
         {/* DESKTOP MENU (Public) */}
+        {/* MOBILE MENU DROPDOWN */}
         <ul className={`menu ${menuOpen ? "open" : ""}`}>
-          {/* On Mobile, if dashboard, show Dashboard Links. On Desktop, show Public Links */}
           {(menuOpen && showRoleNav ? roleLinks : desktopTopLinks).map((item) => (
             <li key={item.to}>
               <Link className={isActive(item.to)} to={item.to} onClick={closeMenu}>
-                {"icon" in item && item.icon && menuOpen ? (
-                  <span className="mIcon">{React.createElement(item.icon)}</span>
-                ) : null}
                 {item.label}
               </Link>
             </li>
           ))}
 
-          {/* MOBILE ONLY: Partner Link inside Menu */}
-          <li className="mobile-partner-item">
-            <Link to="/partner-with-us" onClick={closeMenu} className="mobile-partner-link">
-              <FaHandshake /> Partner With Us
-            </Link>
-          </li>
         </ul>
 
         {/* RIGHT ACTIONS */}
@@ -123,8 +134,7 @@ const Navbar = () => {
 
           {user ? (
             <div className="user-actions">
-              {/* ✅ Desktop role-menu dropdown (only in dashboard area) */}
-              {showRoleNav ? (
+              {showRoleNav && (
                 <div className="roleMenuWrap">
                   <button
                     className="roleMenuBtn"
@@ -134,7 +144,7 @@ const Navbar = () => {
                     Menu <FaChevronDown />
                   </button>
 
-                  {roleMenuOpen ? (
+                  {roleMenuOpen && (
                     <div className="roleMenu">
                       {roleLinks.map((x) => (
                         <Link key={x.to} to={x.to} className="roleItem" onClick={() => setRoleMenuOpen(false)}>
@@ -143,58 +153,65 @@ const Navbar = () => {
                         </Link>
                       ))}
                     </div>
-                  ) : null}
+                  )}
                 </div>
-              ) : null}
+              )}
 
               <button className="dashboard-btn" onClick={goDashboard}>
                 <FaUserCircle /> <span className="dash-text">Dashboard</span>
               </button>
 
-              <button
-                className="logout-btn"
-                onClick={() => logout("/")}
-                title="Logout"
-              >
-                <FaSignOutAlt />
-              </button>
             </div>
           ) : (
-            <div className="login-dropdown">
-              <span className="login-trigger">Login</span>
-              <div className="dropdown-content">
-                <Link to="/employee-login" onClick={closeMenu}><FaUserCircle /> Employee</Link>
-                <Link to="/admin-login" onClick={closeMenu}><FaUserCircle /> HR Admin</Link>
-                <Link to="/company-login" onClick={closeMenu}><FaUserCircle /> Company</Link>
-                <div className="divider" />
-                <Link to="/super-admin-login" onClick={closeMenu}><FaUserCircle /> Super Admin</Link>
+            <>
+              <div className="login-dropdown">
+                <span className="login-trigger">Login</span>
+                <div className="dropdown-content">
+                  <Link to="/employee-login" onClick={closeMenu}><FaUserCircle /> Employee</Link>
+                  <Link to="/admin-login" onClick={closeMenu}><FaUserCircle /> HR Admin</Link>
+                  <Link to="/company-login" onClick={closeMenu}><FaUserCircle /> Company</Link>
+                  <div className="divider" />
+                  <Link to="/super-admin-login" onClick={closeMenu}><FaUserCircle /> Super Admin</Link>
+                </div>
               </div>
-            </div>
+            </>
           )}
 
           {/* HAMBURGER */}
-          <button className="hamburger" onClick={() => setMenuOpen(!menuOpen)}>
+          <button
+            className={`hamburger ${menuOpen ? "active" : ""}`}
+            onClick={() => setMenuOpen(!menuOpen)}
+            aria-label="Toggle Menu"
+          >
             {menuOpen ? <FaTimes /> : <FaBars />}
           </button>
         </div>
       </div>
 
       <style>{`
+      /* ================= NAVBAR ================= */
+
         .navbar {
           position: fixed;
           top: 0;
           width: 100%;
-          height: 80px;
-          z-index: 1000;
-          transition: all 0.3s ease;
-          background: transparent;
-        }
-        .navbar.scrolled {
-          background: rgba(255, 255, 255, 0.95);
-          backdrop-filter: blur(10px);
-          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
           height: 70px;
+          --nav-h: 70px; /* CSS Variable for sync */
+          z-index: 1000;
+          transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+          background: rgba(5, 7, 20, 0.88);
+          backdrop-filter: blur(16px);
+          -webkit-backdrop-filter: blur(16px);
+          border-bottom: none;
         }
+
+        .navbar.scrolled {
+          background: rgba(5, 7, 20, 0.97);
+          height: 60px;
+          --nav-h: 60px;
+          box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(80, 200, 255, 0.06);
+        }
+
         .nav-container {
           max-width: 1400px;
           margin: auto;
@@ -205,254 +222,386 @@ const Navbar = () => {
           justify-content: space-between;
         }
 
+        /* Logo styles */
         .logo {
           display: flex;
           align-items: center;
           gap: 10px;
-          font-weight: 800;
-          font-size: 1.5rem;
           text-decoration: none;
-          color: #0f172a;
-          letter-spacing: -0.5px;
-          z-index: 1001;
+          color: #ffffff;
+          position: relative;
+          z-index: 1010; /* Ensure logo is above overlay */
         }
-        .logo-icon {
-          background: linear-gradient(135deg, #2563eb, #1d4ed8);
-          color: #fff;
-          width: 36px;
-          height: 36px;
+
+        .logo-img {
+          width: 44px;
+          height: 44px;
+          object-fit: contain;
           border-radius: 10px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 1.1rem;
-          box-shadow: 0 4px 10px rgba(37, 99, 235, 0.3);
+          filter: drop-shadow(0 0 10px rgba(80, 200, 255, 0.35));
+          transition: filter 0.3s;
         }
-        .logo span span { color: #2563eb; }
+
+        .logo:hover .logo-img {
+          filter: drop-shadow(0 0 18px rgba(140, 80, 255, 0.55));
+        }
+
+        .logo-text {
+          font-weight: 900;
+          font-size: 1.45rem;
+          letter-spacing: -0.5px;
+          white-space: nowrap;
+          background: linear-gradient(90deg, #50c8ff 0%, #a78bfa 55%, #e879f9 100%);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
+        }
+
+        .logo-text span {
+          background: linear-gradient(90deg, #a78bfa, #e879f9);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
+        }
 
         .menu {
           display: flex;
-          gap: 26px;
+          gap: 32px;
           list-style: none;
           margin: 0;
           padding: 0;
           align-items: center;
         }
+
         .menu a {
           text-decoration: none;
           font-weight: 700;
-          color: #64748b;
-          transition: 0.2s;
-          font-size: 0.95rem;
-          position: relative;
+          color: rgba(255, 255, 255, 0.65);
+          transition: 0.3s;
+          font-size: 0.85rem; /* Smaller text on desktop */
           display: inline-flex;
           align-items: center;
-          gap: 8px;
+          gap: 7px; /* Compact gap */
+          letter-spacing: 0.02em;
+          padding: 6px 0;
         }
-        .menu a:hover,
-        .menu a.active { color: #2563eb; }
-        .mIcon{ display:inline-flex; align-items:center; opacity:0.9; }
+
+        .menu a .mIcon {
+          font-size: 0.88rem; /* Smaller icons on desktop */
+          color: rgba(80, 200, 255, 0.8);
+          transition: 0.3s;
+        }
+
+        .menu a:hover .mIcon {
+          color: #50c8ff;
+          transform: translateY(-1px);
+        }
+
+        .menu a:hover {
+          color: #50c8ff;
+          text-shadow: 0 0 12px rgba(80, 200, 255, 0.4);
+        }
+
+        .menu a.active { 
+          color: #a78bfa;
+          text-shadow: 0 0 12px rgba(167, 139, 250, 0.4);
+        }
 
         .actions {
           display: flex;
           align-items: center;
-          gap: 15px;
-          position: relative;
+          gap: 20px;
         }
 
         .partner-btn {
-          border: 1.5px solid #2563eb;
-          padding: 8px 20px;
+          border: 1.5px solid rgba(80, 200, 255, 0.4);
+          padding: 9px 22px;
           border-radius: 50px;
           text-decoration: none;
-          color: #2563eb;
-          font-weight: 800;
+          color: #50c8ff;
+          font-weight: 700;
           display: flex;
           align-items: center;
           gap: 8px;
-          transition: 0.2s;
+          transition: 0.3s;
           font-size: 0.9rem;
         }
-        .partner-btn:hover { background: #eff6ff; transform: translateY(-1px); }
 
-        .user-actions { display: flex; align-items: center; gap: 10px; }
+        .partner-btn:hover {
+          background: rgba(80, 200, 255, 0.08);
+          border-color: #50c8ff;
+          box-shadow: 0 0 20px rgba(80, 200, 255, 0.2);
+          color: #fff;
+        }
 
         .dashboard-btn {
-          background: #0f172a;
+          background: linear-gradient(135deg, #3b82f6, #8b5cf6);
           color: #fff;
           border: none;
-          padding: 9px 18px;
-          border-radius: 12px;
+          padding: 10px 22px;
+          border-radius: 14px;
           font-weight: 800;
           cursor: pointer;
           display: flex;
           gap: 8px;
           align-items: center;
-          font-size: 0.9rem;
-          transition: 0.2s;
+          transition: 0.3s;
+          box-shadow: 0 8px 20px -4px rgba(80, 130, 255, 0.4);
         }
-        .dashboard-btn:hover { background: #1e293b; transform: translateY(-1px); }
+
+        .dashboard-btn:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 14px 28px -4px rgba(140, 80, 255, 0.5);
+        }
 
         .logout-btn {
-          background: #fee2e2;
-          color: #dc2626;
-          border: none;
-          width: 40px;
-          height: 40px;
-          border-radius: 12px;
+          background: rgba(255,255,255,0.04);
+          color: #ef4444;
+          border: 1px solid rgba(239, 68, 68, 0.15);
+          width: 44px;
+          height: 44px;
+          border-radius: 14px;
           cursor: pointer;
           display: flex;
           align-items: center;
           justify-content: center;
-          transition: 0.2s;
+          transition: 0.3s;
         }
-        .logout-btn:hover { background: #fecaca; }
 
-        /* Role Menu */
+        .logout-btn:hover {
+          background: rgba(239, 68, 68, 0.1);
+          border-color: rgba(239, 68, 68, 0.35);
+        }
+
         .roleMenuWrap { position: relative; }
-        .roleMenuBtn{
-          background: #fff;
-          border: 1px solid rgba(0,0,0,0.12);
-          padding: 9px 12px;
-          border-radius: 12px;
-          cursor: pointer;
-          font-weight: 800;
-          display:flex;
-          align-items:center;
-          gap: 8px;
-        }
-        .roleMenu{
-          position: absolute;
-          top: 120%;
-          right: 0;
-          width: 240px;
-          background: #fff;
-          border: 1px solid rgba(0,0,0,0.08);
-          border-radius: 14px;
-          box-shadow: 0 18px 40px rgba(0,0,0,0.12);
-          padding: 8px;
-          z-index: 1100;
-        }
-        .roleItem{
-          display:flex;
-          align-items:center;
-          gap: 10px;
-          padding: 10px 12px;
-          border-radius: 12px;
-          text-decoration:none;
-          color:#0f172a;
-          font-weight: 700;
-        }
-        .roleItem:hover{ background: #f8fafc; color:#2563eb; }
 
-        /* Login dropdown */
-        .login-dropdown { position: relative; z-index: 1002; }
-        .login-trigger {
-          background: #2563eb;
+        .roleMenuBtn {
+          background: rgba(80, 200, 255, 0.06);
+          border: 1px solid rgba(80, 200, 255, 0.18);
           color: #fff;
-          padding: 9px 24px;
-          border-radius: 50px;
-          font-weight: 900;
+          padding: 10px 16px;
+          border-radius: 14px;
           cursor: pointer;
-          font-size: 0.9rem;
-          box-shadow: 0 4px 10px rgba(37, 99, 235, 0.25);
-          transition: 0.2s;
-          display: inline-block;
+          font-weight: 700;
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          transition: 0.3s;
         }
-        .login-trigger:hover { background: #1d4ed8; transform: translateY(-1px); }
+
+        .roleMenu {
+          position: absolute;
+          top: calc(var(--nav-h) - 10px); /* Positioned exactly relative to navbar height */
+          right: 0;
+          width: 250px;
+          background: #080d1e;
+          border-radius: 18px;
+          box-shadow: 0 20px 60px rgba(0,0,0,0.6), 0 0 0 1px rgba(80,200,255,0.07);
+          padding: 10px;
+          border: 1px solid rgba(80,200,255,0.07);
+          backdrop-filter: blur(20px);
+        }
+
+        .roleItem {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          padding: 12px 14px;
+          border-radius: 12px;
+          text-decoration: none;
+          color: rgba(255, 255, 255, 0.7);
+          font-weight: 600;
+          transition: 0.2s;
+        }
+
+        .roleItem:hover {
+          background: rgba(80, 200, 255, 0.08);
+          color: #50c8ff;
+        }
+
+        .login-dropdown { 
+          position: relative; 
+          z-index: 1010; /* Keep above overlay when menu is open */
+        }
+
+        .login-trigger {
+          background: linear-gradient(135deg, #3b82f6, #8b5cf6, #e879f9);
+          color: #fff;
+          padding: 10px 28px;
+          border-radius: 50px;
+          font-weight: 800;
+          cursor: pointer;
+          transition: 0.3s;
+          box-shadow: 0 8px 20px -4px rgba(80, 130, 255, 0.45);
+        }
+
+        .login-trigger:hover { 
+          transform: translateY(-2px);
+          box-shadow: 0 14px 28px -4px rgba(140, 80, 255, 0.55);
+        }
 
         .dropdown-content {
           position: absolute;
-          top: 140%;
+          top: calc(var(--nav-h) - 10px); /* Attached to navbar bottom */
           right: 0;
-          background: #fff;
-          min-width: 220px;
-          border-radius: 14px;
-          box-shadow: 0 15px 40px rgba(0,0,0,0.15);
+          background: #080d1e;
+          min-width: 240px;
+          border-radius: 18px;
+          box-shadow: 0 25px 60px rgba(0,0,0,0.7), 0 0 0 1px rgba(80,200,255,0.07);
           opacity: 0;
           visibility: hidden;
-          transform: translateY(10px);
-          transition: all 0.2s ease-in-out;
-          padding: 8px;
-          border: 1px solid #f1f5f9;
+          transform: translateY(15px);
+          transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1);
+          padding: 10px;
+          border: 1px solid rgba(80,200,255,0.07);
+          backdrop-filter: blur(24px);
         }
+
         .login-dropdown:hover .dropdown-content {
           opacity: 1;
           visibility: visible;
           transform: translateY(0);
         }
+
         .dropdown-content a {
           display: flex;
-          gap: 10px;
+          gap: 12px;
           align-items: center;
-          padding: 12px 15px;
-          font-weight: 700;
+          padding: 14px 16px;
+          font-weight: 600;
           text-decoration: none;
-          color: #475569;
-          border-radius: 10px;
-          font-size: 0.9rem;
+          color: rgba(255, 255, 255, 0.7);
+          border-radius: 12px;
+          font-size: 0.92rem;
           transition: 0.2s;
         }
-        .dropdown-content a:hover { background: #f8fafc; color: #2563eb; }
-        .divider { height: 1px; background: #e2e8f0; margin: 6px 0; }
+
+        .dropdown-content a:hover {
+          background: rgba(167, 139, 250, 0.1);
+          color: #a78bfa;
+        }
+
+        .divider {
+          height: 1px;
+          background: rgba(80,200,255,0.07);
+          margin: 8px 0;
+        }
 
         .hamburger {
           display: none;
-          font-size: 1.6rem;
+          font-size: 1.8rem;
           background: none;
           border: none;
           cursor: pointer;
-          color: #1e293b;
-          z-index: 1002;
+          color: #ffffff;
+          position: relative;
+          z-index: 1010; /* Match logo z-index */
+          transition: 0.3s;
         }
 
-        .mobile-partner-item { display: none; }
+        .hamburger.active {
+          color: #a78bfa;
+        }
+
+        /* MOBILE OVERLAY */
+        .nav-overlay {
+          position: fixed;
+          inset: 0;
+          background: rgba(0, 0, 0, 0.5);
+          backdrop-filter: blur(4px);
+          z-index: 900; /* Below navbar contents */
+          animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
 
         @media (max-width: 1024px) {
           .hamburger { display: block; }
-          .desktop-only { display: none !important; }
-          .roleMenuWrap { display: none; } /* Hide desktop role dropdown on mobile */
-
-          .mobile-partner-item { display: block; margin-top: 15px; }
-          .mobile-partner-link {
-            background: #eff6ff;
-            color: #2563eb !important;
-            padding: 12px 20px !important;
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            text-align: center;
-          }
 
           .menu {
             position: fixed;
-            top: 0;
+            top: var(--nav-h); /* Dynamically follows navbar height */
             right: 0;
-            background: #ffffff;
             width: 300px;
-            height: 100vh;
+            height: calc(100dvh - var(--nav-h)); 
+            max-height: calc(100dvh - var(--nav-h));
+            background: rgba(5, 7, 20, 0.98);
             flex-direction: column;
-            padding: 100px 30px 40px;
-            gap: 18px;
+            padding: 30px 24px 100px;
+            gap: 8px;
             transform: translateX(100%);
-            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            box-shadow: -10px 0 30px rgba(0,0,0,0.05);
-            z-index: 999;
-            align-items: flex-start;
+            transition: transform 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+            box-shadow: -15px 0 40px rgba(0,0,0,0.6);
+            backdrop-filter: blur(30px);
+            z-index: 1000;
+            display: flex;
+            overflow-y: auto !important;
           }
+
           .menu.open { transform: translateX(0); }
 
           .menu a {
-            font-size: 1.05rem;
-            display: block;
-            border-bottom: 1px solid #f1f5f9;
-            padding-bottom: 10px;
+            font-size: 1.05rem; /* Reduced from 1.25rem for mobile */
             width: 100%;
+            padding: 14px 0;
+            border-bottom: 1px solid rgba(80, 200, 255, 0.05);
+            color: rgba(255, 255, 255, 0.9);
+            justify-content: center; 
+            text-align: center;
+            font-weight: 800;
           }
+
+          .menu a .mIcon {
+            color: #50c8ff;
+            font-size: 1rem; /* Compact icon size */
+            filter: drop-shadow(0 0 10px rgba(80, 200, 255, 0.2));
+          }
+
+          .menu a.active {
+            color: #fff;
+            background: linear-gradient(90deg, transparent, rgba(80, 200, 255, 0.1), transparent);
+            border-bottom: 2px solid #50c8ff;
+            text-shadow: 0 0 15px rgba(80, 200, 255, 0.6);
+          }
+
+          .desktop-only { display: none; }
+          .logo-text { font-size: 1.25rem; }
+          .logo-img { width: 38px; height: 38px; }
           .dash-text { display: none; }
-          .dashboard-btn { padding: 10px; }
+          .dashboard-btn { padding: 12px; }
+        }
+
+        @media (max-width: 485px) {
+          .nav-container { padding: 0 12px; }
+          .logo { gap: 6px; }
+          .logo-text { font-size: 1.1rem; }
+          .logo-img { width: 34px; height: 34px; }
+          .actions { gap: 12px; }
+          .login-trigger { padding: 8px 18px; font-size: 0.9rem; }
+          .hamburger { font-size: 1.6rem; }
+          .menu { width: 100%; }
+        }
+
+        @media (max-width: 380px) {
+          .nav-container { padding: 0 8px; }
+          .logo-text { font-size: 0.95rem; }
+          .logo-img { width: 28px; height: 28px; }
+          .login-trigger { padding: 7px 14px; font-size: 0.8rem; }
+          .actions { gap: 8px; }
+          .hamburger { font-size: 1.4rem; }
+        }
+
+        @media (max-width: 340px) {
+          .nav-container { padding: 0 6px; }
+          .logo-text { font-size: 0.85rem; }
+          .logo-img { width: 24px; height: 24px; }
+          .logo-text span { display: none; } /* Hide 'HRMS' specifically for 320px */
+          .login-trigger { padding: 6px 12px; font-size: 0.75rem; }
+          .actions { gap: 6px; }
+          .hamburger { font-size: 1.3rem; }
         }
       `}</style>
     </nav>

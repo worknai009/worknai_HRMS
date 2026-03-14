@@ -5,8 +5,10 @@ const crypto = require('crypto');
 const { ensureDir } = require('../utils/fileSecurity');
 
 // Separate folders (SaaS safe: public static serve mat karo; download via secure route)
-const imageDir = path.resolve(process.cwd(), 'uploads/images');
-const taskDir  = path.resolve(process.cwd(), 'uploads/tasks');
+// Separate folders
+const UPLOADS_ROOT = path.join(__dirname, '..', 'uploads');
+const imageDir = path.join(UPLOADS_ROOT, 'images');
+const taskDir = path.join(UPLOADS_ROOT, 'tasks');
 
 ensureDir(imageDir);
 ensureDir(taskDir);

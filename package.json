@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "gsap": "^3.14.2",
+    "splitting": "^1.1.0"
+  }
+}

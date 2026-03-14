@@ -33,6 +33,7 @@ import {
   FaChevronRight,
 } from "react-icons/fa";
 import EditEmployeeModal from "../../components/Modals/EditEmployeeModal";
+import worknaiLogo from "../../assets/worknai logo.png";
 
 /* =========================
    FALLBACK REQUEST HELPERS
@@ -867,10 +868,10 @@ const HrAdminDashboard = () => {
       <header className="dashboard-header">
         <div className="header-title">
           <div className="icon-box-header">
-            <FaBuilding />
+            <img src={worknaiLogo} alt="WorknAi" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
           </div>
           <div>
-            <h1>HR Portal</h1>
+            <h1>WorknAi <span>HRMS</span></h1>
             <p>Admin Dashboard</p>
           </div>
         </div>
@@ -880,7 +881,7 @@ const HrAdminDashboard = () => {
             <FaSyncAlt className={syncing ? "spin" : ""} /> {syncing ? "Syncing…" : "Sync Data"}
           </button>
 
-          <button className="btn-ghost" onClick={logout} title="Logout" type="button">
+          <button className="btn-ghost" onClick={() => logout("/")} title="Logout" type="button">
             Logout
           </button>
         </div>
@@ -996,7 +997,7 @@ const HrAdminDashboard = () => {
                   </div>
                 </div>
 
-                <div className="table-responsive">
+                <div className="table-responsive desktop-only">
                   <table className="modern-table compact">
                     <thead>
                       <tr>
@@ -1010,9 +1011,7 @@ const HrAdminDashboard = () => {
                     <tbody>
                       {jobsPager.paginatedItems.length === 0 ? (
                         <tr>
-                          <td colSpan="5" className="empty-row">
-                            No jobs found.
-                          </td>
+                          <td colSpan="5" className="empty-row"> No jobs found. </td>
                         </tr>
                       ) : (
                         jobsPager.paginatedItems.map((j) => {
@@ -1026,17 +1025,11 @@ const HrAdminDashboard = () => {
                               </td>
                               <td>{j.department || j.dept || "--"}</td>
                               <td>{j.employmentType || j.type || "--"}</td>
-                              <td>
-                                <Pill text={st} tone={tone} />
-                              </td>
+                              <td> <Pill text={st} tone={tone} /> </td>
                               <td className="text-right">
                                 <div className="action-row right-align">
-                                  <button className="btn-icon view" type="button" title="Edit" onClick={() => openEditJob(j)}>
-                                    <FaEdit />
-                                  </button>
-                                  <button className="btn-icon delete" type="button" title="Delete" onClick={() => deleteJob(j._id, j.title)}>
-                                    <FaTrash />
-                                  </button>
+                                  <button className="btn-icon view" type="button" title="Edit" onClick={() => openEditJob(j)}> <FaEdit /> </button>
+                                  <button className="btn-icon delete" type="button" title="Delete" onClick={() => deleteJob(j._id, j.title)}> <FaTrash /> </button>
                                 </div>
                               </td>
                             </tr>
@@ -1045,6 +1038,32 @@ const HrAdminDashboard = () => {
                       )}
                     </tbody>
                   </table>
+                </div>
+
+                {/* MOBILE JOBS */}
+                <div className="mobile-cards">
+                  {jobsPager.paginatedItems.map((j) => {
+                    const st = String(j?.status || "Open");
+                    const tone = st.toLowerCase() === "open" ? "green" : st.toLowerCase() === "closed" ? "red" : "info";
+                    return (
+                      <div key={j._id} className="m-card">
+                        <div className="m-card-top">
+                          <div className="m-title">{j.title || "--"}</div>
+                          <Pill text={st} tone={tone} />
+                        </div>
+                        <div className="m-card-body">
+                          <div className="m-item"><strong>Dept:</strong> {j.department || j.dept || "--"}</div>
+                          <div className="m-item"><strong>Type:</strong> {j.employmentType || j.type || "--"}</div>
+                          <div className="m-item"><strong>Location:</strong> {j.location || "--"}</div>
+                        </div>
+                        <div className="m-card-actions">
+                          <button className="btn-icon view" onClick={() => openEditJob(j)}> <FaEdit /> Edit </button>
+                          <button className="btn-icon delete" onClick={() => deleteJob(j._id, j.title)}> <FaTrash /> Delete </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                  {jobsPager.paginatedItems.length === 0 && <div className="empty-row">No jobs found.</div>}
                 </div>
 
 
@@ -1060,9 +1079,8 @@ const HrAdminDashboard = () => {
             {recruitmentTab === "interviews" && (
               <div className="recruitment-card">
                 {/* ... table ... */}
-                <div className="table-responsive">
+                <div className="table-responsive desktop-only">
                   <table className="modern-table compact">
-                    {/* ... theads ... */}
                     <thead>
                       <tr>
                         <th>Candidate</th>
@@ -1121,6 +1139,37 @@ const HrAdminDashboard = () => {
                   </table>
                 </div>
 
+                {/* MOBILE INTERVIEWS */}
+                <div className="mobile-cards">
+                  {interviewsPager.paginatedItems.map((i) => {
+                    const when = i?.scheduledAt || i?.dateTime || i?.createdAt;
+                    const cand = i?.applicationId?.candidate?.name || i?.applicationId?.candidateId?.name || i?.candidateId?.name || "Unknown Candidate";
+                    const job = i?.applicationId?.jobId?.title || i?.jobId?.title || "Unknown Job";
+                    const st = String(i?.status || "Scheduled");
+                    const stKey = st.toLowerCase().replace(/\s+/g, "-");
+                    const cRes = i?.candidateResponse || 'Pending';
+                    return (
+                      <div key={i._id} className="m-card">
+                        <div className="m-card-top">
+                          <div className="m-title">{cand}</div>
+                          <span className={`status-pill ${stKey}`}>{st}</span>
+                        </div>
+                        <div className="m-card-body">
+                          <div className="m-item"><strong>Job:</strong> {job}</div>
+                          <div className="m-item"><strong>Time:</strong> {fmtDateTime(when)}</div>
+                          <div className="m-item"><strong>Mode:</strong> {i.mode || "Online"}</div>
+                          <div className="m-item"><strong>Response:</strong> {cRes}</div>
+                        </div>
+                        <div className="m-card-actions">
+                          <button className="btn-icon view" onClick={() => openEditInterview(i)}> <FaEdit /> Edit </button>
+                          <button className="btn-icon delete" onClick={() => deleteInterview(i._id)}> <FaTrash /> Delete </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                  {interviewsPager.paginatedItems.length === 0 && <div className="empty-row">No interviews yet.</div>}
+                </div>
+
                 <div className="section-foot">
                   <Pagination pager={interviewsPager} />
                 </div>
@@ -1137,7 +1186,7 @@ const HrAdminDashboard = () => {
                   </div>
                 </div>
 
-                <div className="table-responsive">
+                <div className="table-responsive desktop-only">
                   <table className="modern-table compact">
                     <thead><tr><th>Candidate</th><th>Job</th><th>Applied</th><th>Stage</th><th className="text-right">Actions</th></tr></thead>
                     <tbody>
@@ -1177,6 +1226,39 @@ const HrAdminDashboard = () => {
                     </tbody>
                   </table>
                 </div>
+
+                {/* MOBILE APPLICATIONS */}
+                <div className="mobile-cards">
+                  {applicationsPager.paginatedItems.map((a) => {
+                    const cand = a?.candidate?.name || a?.candidateId?.name || "Unknown";
+                    const job = a?.jobId?.title || a?.job?.title || "Role";
+                    const stage = a?.stage || "Applied";
+                    const stageTone = String(stage).toLowerCase() === "rejected" ? "red" : String(stage).toLowerCase() === "hired" ? "green" : "blue";
+                    return (
+                      <div key={a._id} className="m-card">
+                        <div className="m-card-top">
+                          <div className="m-title">{cand}</div>
+                          <Pill text={stage} tone={stageTone} />
+                        </div>
+                        <div className="m-card-body">
+                          <div className="m-item"><strong>Job:</strong> {job}</div>
+                          <div className="m-item"><strong>Applied:</strong> {fmtDate(a.appliedAt || a.createdAt)}</div>
+                          <div className="m-item">
+                            <strong>Update Stage:</strong>
+                            <select className="stage-select" style={{ marginTop: 8 }} value={stage} onChange={(e) => updateApplicationStage(a._id, e.target.value)}>
+                              {APP_STAGES.map((s) => <option key={s} value={s}>{s}</option>)}
+                            </select>
+                          </div>
+                        </div>
+                        <div className="m-card-actions">
+                          <button className="btn-icon view" onClick={() => navigate("/hr/recruitment/applications")}> <FaEye /> View </button>
+                          <button className="btn-icon delete" onClick={() => deleteApplication(a._id)}> <FaTrash /> Delete </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                  {applicationsPager.paginatedItems.length === 0 && <div className="empty-row">No applications found.</div>}
+                </div>
                 <div className="section-foot">
                   <Pagination pager={applicationsPager} />
                 </div>
@@ -1195,7 +1277,7 @@ const HrAdminDashboard = () => {
               </div>
             </div>
 
-            <table className="modern-table">
+            <table className="modern-table desktop-only">
               <thead><tr><th>Profile</th><th>Designation</th><th>Status</th><th>Salary</th><th>Joined</th><th className="text-right">Actions</th></tr></thead>
               <tbody>
                 {employeesPager.paginatedItems.length === 0 ? (
@@ -1208,12 +1290,21 @@ const HrAdminDashboard = () => {
                         <td>
                           <div className="user-cell">
                             <div className="avatar-circle">{String(emp?.name || "U").charAt(0)}</div>
-                            <div><strong>{emp?.name || "--"}</strong><small>{emp?.email || "--"}</small></div>
+                            <div>
+                              <strong>{emp?.name || "--"}</strong>
+                              <div style={{ color: 'rgba(255, 255, 255, 0.5)', fontSize: '11px', marginTop: '2px' }}>{emp?.email || "--"}</div>
+                            </div>
                           </div>
                         </td>
                         <td><span className="role-tag">{emp?.designation || emp?.role || "—"}</span></td>
                         <td><span className={`status-pill ${String(n.status).toLowerCase()}`}>{n.status}</span></td>
-                        <td>₹{Number(emp?.basicSalary || 0).toLocaleString()}</td>
+                        <td>
+                          {emp?.employmentType === 'Intern' ? (
+                            <span className="pill pill-neutral">Unpaid (Intern)</span>
+                          ) : (
+                            `₹${Number(emp?.basicSalary || 0).toLocaleString()}`
+                          )}
+                        </td>
                         <td>{emp?.joiningDate ? fmtDate(emp.joiningDate) : "--"}</td>
                         <td className="text-right">
                           <div className="action-row right-align">
@@ -1229,6 +1320,39 @@ const HrAdminDashboard = () => {
                 )}
               </tbody>
             </table>
+
+            {/* MOBILE DIRECTORY */}
+            <div className="mobile-cards">
+              {employeesPager.paginatedItems.map((emp) => {
+                const n = normalizeEmployee(emp);
+                return (
+                  <div key={emp._id} className="m-card">
+                    <div className="m-card-top">
+                      <div className="user-cell">
+                        <div className="avatar-circle">{String(emp?.name || "U").charAt(0)}</div>
+                        <div><strong>{emp?.name || "--"}</strong></div>
+                      </div>
+                      <span className={`status-pill ${String(n.status).toLowerCase()}`}>{n.status}</span>
+                    </div>
+                    <div className="m-card-body">
+                      <div className="m-item"><strong>Role:</strong> {emp?.designation || emp?.role || "—"}</div>
+                      <div className="m-item"><strong>Email:</strong> {emp?.email || "--"}</div>
+                      <div className="m-item">
+                        <strong>Salary:</strong> {emp?.employmentType === 'Intern' ? 'Unpaid (Intern)' : `₹${Number(emp?.basicSalary || 0).toLocaleString()}`}
+                      </div>
+                      <div className="m-item"><strong>Joined:</strong> {emp?.joiningDate ? fmtDate(emp.joiningDate) : "--"}</div>
+                    </div>
+                    <div className="m-card-actions">
+                      {!n.isApproved && <button className="btn-icon approve" onClick={() => initiateApproval(emp)}> <FaCheck /> Approve </button>}
+                      <button className="btn-icon view" onClick={() => openEditEmployee(emp)}> <FaEdit /> Edit </button>
+                      <button className="btn-icon view" onClick={() => navigate(`/hr/view-employee/${emp._id}`)}> <FaEye /> View </button>
+                      <button className="btn-icon delete" onClick={() => handleDelete(emp._id, emp.name)}> <FaTrash /> Delete </button>
+                    </div>
+                  </div>
+                );
+              })}
+              {employeesPager.paginatedItems.length === 0 && <div className="empty-row">No employees found.</div>}
+            </div>
 
             <div className="section-foot">
               <Pagination pager={employeesPager} />
@@ -1251,7 +1375,7 @@ const HrAdminDashboard = () => {
                 </div>
               </div>
 
-              <div className="table-responsive">
+              <div className="table-responsive desktop-only">
                 <table className="modern-table">
                   <thead>
                     <tr>
@@ -1345,10 +1469,41 @@ const HrAdminDashboard = () => {
                     )}
                   </tbody>
                 </table>
+              </div>
 
-                <div className="section-foot">
-                  <Pagination pager={tasksPager} />
-                </div>
+              {/* MOBILE TASKS */}
+              <div className="mobile-cards">
+                {tasksPager.paginatedItems.map((task) => {
+                  const status = String(task?.status || "In Progress");
+                  const pri = String(task?.priority || "Medium");
+                  return (
+                    <div key={task._id} className="m-card">
+                      <div className="m-card-top">
+                        <div className="m-title">{task?.title || "--"}</div>
+                        <span className={`status-pill ${status.toLowerCase().replace(/\s+/g, "-")}`}>{status}</span>
+                      </div>
+                      <div className="m-card-body">
+                        <div className="m-item"><strong>Assigned To:</strong> {task?.assignedTo?.name || task?.userId?.name || "Unknown"}</div>
+                        <div className="m-item"><strong>Priority:</strong> <span className={`priority-badge ${pri.toLowerCase()}`}>{pri}</span></div>
+                        <div className="m-item"><strong>Deadline:</strong> {task?.deadline ? fmtDate(task.deadline) : "--"}</div>
+                      </div>
+                      <div className="m-card-actions">
+                        <button className="btn-icon view" onClick={() => openTaskDetails(task)}> <FaEye /> Details </button>
+                        {status.toLowerCase() === "completed" && (
+                          <>
+                            <button className="btn-icon approve" onClick={() => handleTaskReview(task._id, "Verified")}> Verify </button>
+                            <button className="btn-icon delete" onClick={() => handleTaskReview(task._id, "In Progress")}> Redo </button>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+                {tasksPager.paginatedItems.length === 0 && <div className="empty-row">No tasks found.</div>}
+              </div>
+
+              <div className="section-foot">
+                <Pagination pager={tasksPager} />
               </div>
             </div>
           )
@@ -1364,7 +1519,7 @@ const HrAdminDashboard = () => {
                 </h3>
               </div>
 
-              <table className="modern-table">
+              <table className="modern-table desktop-only">
                 <thead>
                   <tr>
                     <th>Employee</th>
@@ -1378,9 +1533,7 @@ const HrAdminDashboard = () => {
                 <tbody>
                   {leavesPager.paginatedItems.length === 0 ? (
                     <tr>
-                      <td colSpan="6" className="empty-row">
-                        No leave requests found.
-                      </td>
+                      <td colSpan="6" className="empty-row"> No leave requests found. </td>
                     </tr>
                   ) : (
                     leavesPager.paginatedItems.map((l) => {
@@ -1391,28 +1544,16 @@ const HrAdminDashboard = () => {
 
                       return (
                         <tr key={l._id}>
-                          <td>
-                            <strong>{l?.userId?.name || l?.employee?.name || "—"}</strong>
-                          </td>
-                          <td>
-                            <span className={`type-badge ${ltKey}`}>{leaveType}</span>
-                          </td>
-                          <td>
-                            {l?.startDate ? fmtDate(l.startDate) : "--"} - {l?.endDate ? fmtDate(l.endDate) : "--"}
-                          </td>
+                          <td><strong>{l?.userId?.name || l?.employee?.name || "—"}</strong></td>
+                          <td><span className={`type-badge ${ltKey}`}>{leaveType}</span></td>
+                          <td>{l?.startDate ? fmtDate(l.startDate) : "--"} - {l?.endDate ? fmtDate(l.endDate) : "--"}</td>
                           <td className="reason-cell">{l?.reason || "--"}</td>
-                          <td>
-                            <span className={`status-pill ${stKey}`}>{st}</span>
-                          </td>
+                          <td><span className={`status-pill ${stKey}`}>{st}</span></td>
                           <td className="text-right">
                             {stKey === "pending" ? (
                               <div className="action-row right-align">
-                                <button className="btn-icon approve" onClick={() => handleLeaveAction(l._id, "Approved")} type="button">
-                                  <FaCheck />
-                                </button>
-                                <button className="btn-icon delete" onClick={() => handleLeaveAction(l._id, "Rejected")} type="button">
-                                  <FaTimes />
-                                </button>
+                                <button className="btn-icon approve" onClick={() => handleLeaveAction(l._id, "Approved")} type="button"> <FaCheck /> </button>
+                                <button className="btn-icon delete" onClick={() => handleLeaveAction(l._id, "Rejected")} type="button"> <FaTimes /> </button>
                               </div>
                             ) : (
                               <span className="text-muted">Finalized</span>
@@ -1424,6 +1565,36 @@ const HrAdminDashboard = () => {
                   )}
                 </tbody>
               </table>
+
+              {/* MOBILE LEAVES */}
+              <div className="mobile-cards">
+                {leavesPager.paginatedItems.map((l) => {
+                  const st = String(l?.status || "Pending");
+                  const leaveType = String(l?.leaveType || l?.type || "Paid");
+                  return (
+                    <div key={l._id} className="m-card">
+                      <div className="m-card-top">
+                        <div className="m-title">{l?.userId?.name || l?.employee?.name || "—"}</div>
+                        <span className={`status-pill ${st.toLowerCase()}`}>{st}</span>
+                      </div>
+                      <div className="m-card-body">
+                        <div className="m-item"><strong>Type:</strong> {leaveType}</div>
+                        <div className="m-item"><strong>Duration:</strong> {fmtDate(l.startDate)} - {fmtDate(l.endDate)}</div>
+                        <div className="m-item"><strong>Reason:</strong> {l.reason || "--"}</div>
+                      </div>
+                      <div className="m-card-actions">
+                        {st.toLowerCase() === "pending" ? (
+                          <>
+                            <button className="btn-icon approve" onClick={() => handleLeaveAction(l._id, "Approved")}> <FaCheck /> Approve </button>
+                            <button className="btn-icon delete" onClick={() => handleLeaveAction(l._id, "Rejected")}> <FaTimes /> Reject </button>
+                          </>
+                        ) : <span className="text-muted">Finalized</span>}
+                      </div>
+                    </div>
+                  );
+                })}
+                {leavesPager.paginatedItems.length === 0 && <div className="empty-row">No leave requests found.</div>}
+              </div>
               <div className="section-foot">
                 <Pagination pager={leavesPager} />
               </div>
@@ -1478,9 +1649,12 @@ const HrAdminDashboard = () => {
                     ) : (
                       templatesPager.paginatedItems.map((t) => (
                         <div key={t._id} className="onb-item">
-                          <div>
-                            <div className="onb-title">{t?.title || t?.name || "Template"}</div>
-                            <div className="onb-sub">{(t?.description || "").slice(0, 60) || "—"}</div>
+                          <div className="onb-item-left">
+                            <div className="onb-icon-static"><FaFileAlt /></div>
+                            <div>
+                              <div className="onb-title">{t?.title || t?.name || "Template"}</div>
+                              <div className="onb-sub">{(t?.description || "").slice(0, 60) || "—"}</div>
+                            </div>
                           </div>
                           <Pill text={`${t?.items?.length || 0} steps`} tone="info" />
                         </div>
@@ -1511,9 +1685,12 @@ const HrAdminDashboard = () => {
                         const temp = a?.template?.title || a?.templateId?.title || a?.template?.name || "—";
                         return (
                           <div key={a._id} className="onb-item">
-                            <div>
-                              <div className="onb-title">{emp}</div>
-                              <div className="onb-sub">{temp}</div>
+                            <div className="onb-item-left">
+                              <div className="onb-icon-static variant-teal"><FaUserCheck /></div>
+                              <div>
+                                <div className="onb-title">{emp}</div>
+                                <div className="onb-sub">{temp}</div>
+                              </div>
                             </div>
                             <span className={`status-pill ${stKey}`}>{st}</span>
                           </div>
@@ -2010,707 +2187,720 @@ const HrAdminDashboard = () => {
       }
 
       {/* Create Template Modal */}
-      {
-        showTemplateModal && (
-          <div className="modal-overlay">
-            <div className="modal-card animate-pop">
-              <div className="modal-header">
+      {showTemplateModal && (
+        <div className="modal-overlay">
+          <div className="modal-card animate-pop">
+            <div className="modal-header">
+              <div className="modal-title-wrap">
+                <div className="modal-icon-hex"><FaLayerGroup /></div>
                 <h3>Create Onboarding Template</h3>
-                <button className="close-btn" onClick={() => setShowTemplateModal(false)} type="button">
-                  <FaTimes />
-                </button>
               </div>
+              <button className="close-btn" onClick={() => setShowTemplateModal(false)} type="button">
+                <FaTimes />
+              </button>
+            </div>
 
-              <div className="modal-body">
-                <form
-                  onSubmit={async (e) => {
-                    e.preventDefault();
-                    if (!templateForm.title) return toast.warning("Template title required");
+            <div className="modal-body p-30">
+              <form
+                className="premium-form"
+                onSubmit={async (e) => {
+                  e.preventDefault();
+                  if (!templateForm.title) return toast.warning("Template title required");
 
-                    const items = String(templateForm.itemsText || "")
-                      .split(/\n|,/)
-                      .map((x) => x.trim())
-                      .filter(Boolean);
+                  const items = String(templateForm.itemsText || "")
+                    .split(/\n|,/)
+                    .map((x) => x.trim())
+                    .filter(Boolean);
 
-                    try {
-                      await tryPost(["/onboarding/template"], {
-                        title: templateForm.title,
-                        description: templateForm.description,
-                        items,
-                      });
-                      toast.success("Template created ✅");
-                      setShowTemplateModal(false);
-                      fetchDashboardData(true);
-                    } catch (err) {
-                      toast.error(getApiErrorMessage(err, "Failed to create template"));
-                    }
-                  }}
-                >
-                  <div className="form-group">
-                    <label>Title</label>
-                    <input value={templateForm.title} onChange={(e) => setTemplateForm({ ...templateForm, title: e.target.value })} required />
+                  try {
+                    await tryPost(["/onboarding/template"], {
+                      title: templateForm.title,
+                      description: templateForm.description,
+                      items,
+                    });
+                    toast.success("Template created ✅");
+                    setShowTemplateModal(false);
+                    fetchDashboardData(true);
+                  } catch (err) {
+                    toast.error(getApiErrorMessage(err, "Failed to create template"));
+                  }
+                }}
+              >
+                <div className="form-group animate-slide-in-1">
+                  <label>Template Title <span className="req">*</span></label>
+                  <div className="input-with-icon">
+                    <FaFileAlt className="field-ic" />
+                    <input
+                      value={templateForm.title}
+                      placeholder="e.g., Senior Developer Induction"
+                      onChange={(e) => setTemplateForm({ ...templateForm, title: e.target.value })}
+                      required
+                    />
                   </div>
+                </div>
 
-                  <div className="form-group">
-                    <label>Description</label>
-                    <input value={templateForm.description} onChange={(e) => setTemplateForm({ ...templateForm, description: e.target.value })} />
+                <div className="form-group animate-slide-in-2">
+                  <label>Description (Optional)</label>
+                  <input
+                    value={templateForm.description}
+                    placeholder="Briefly describe the purpose of this template"
+                    onChange={(e) => setTemplateForm({ ...templateForm, description: e.target.value })}
+                  />
+                </div>
+
+                <div className="form-group animate-slide-in-3">
+                  <label>Steps <span className="helper-hint">(one per line or comma separated)</span></label>
+                  <div className="textarea-wrapper">
+                    <textarea
+                      rows="5"
+                      value={templateForm.itemsText}
+                      onChange={(e) => setTemplateForm({ ...templateForm, itemsText: e.target.value })}
+                      placeholder={"Offer letter\nLaptop setup\nPolicy acknowledgement\nTeam Introduction"}
+                    />
+                    <div className="textarea-stats">
+                      {String(templateForm.itemsText || "").split(/\n|,/).filter(x => x.trim()).length} steps detected
+                    </div>
                   </div>
+                </div>
 
-                  <div className="form-group">
-                    <label>Steps (comma or new line)</label>
-                    <textarea rows="4" value={templateForm.itemsText} onChange={(e) => setTemplateForm({ ...templateForm, itemsText: e.target.value })} placeholder={"Offer letter\nLaptop setup\nPolicy acknowledgement"} />
-                  </div>
-
+                <div className="modal-actions-footer animate-slide-in-4">
+                  <button type="button" className="btn-secondary-sm full-width" onClick={() => setShowTemplateModal(false)}>Cancel</button>
                   <button type="submit" className="btn-primary full-width">
-                    Create Template
+                    <FaPlus /> Build Template
                   </button>
-                </form>
-              </div>
+                </div>
+              </form>
             </div>
           </div>
-        )
-      }
+        </div>
+      )}
 
       {/* Assign Onboarding Modal */}
-      {
-        showAssignOnboardingModal && (
-          <div className="modal-overlay">
-            <div className="modal-card animate-pop">
-              <div className="modal-header">
-                <h3>Assign Onboarding</h3>
-                <button className="close-btn" onClick={() => setShowAssignOnboardingModal(false)} type="button">
-                  <FaTimes />
-                </button>
+      {showAssignOnboardingModal && (
+        <div className="modal-overlay">
+          <div className="modal-card animate-pop">
+            <div className="modal-header">
+              <div className="modal-title-wrap">
+                <div className="modal-icon-hex variant-teal"><FaUserTie /></div>
+                <h3>Assign Onboarding Journey</h3>
               </div>
+              <button className="close-btn" onClick={() => setShowAssignOnboardingModal(false)} type="button">
+                <FaTimes />
+              </button>
+            </div>
 
-              <div className="modal-body">
-                <form
-                  onSubmit={async (e) => {
-                    e.preventDefault();
-                    if (!assignForm.userId || !assignForm.templateId) {
-                      toast.warning("Employee + Template required");
-                      return;
-                    }
-                    try {
-                      await tryPost(["/onboarding/assignment"], {
-                        userId: assignForm.userId,
-                        templateId: assignForm.templateId,
-                        dueDate: assignForm.dueDate ? new Date(assignForm.dueDate).toISOString() : undefined,
-                        note: assignForm.note || undefined,
-                      });
-                      toast.success("Onboarding assigned ✅");
-                      setShowAssignOnboardingModal(false);
-                      fetchDashboardData(true);
-                    } catch (err) {
-                      toast.error(getApiErrorMessage(err, "Failed to assign onboarding"));
-                    }
-                  }}
-                >
-                  <div className="form-group">
-                    <label>
-                      <FaUserTie /> Employee
-                    </label>
-                    <select value={assignForm.userId} required onChange={(e) => setAssignForm({ ...assignForm, userId: e.target.value })}>
-                      <option value="">-- Select Employee --</option>
-                      {employees
-                        .filter((e) => normalizeEmployee(e).isApproved)
-                        .map((e) => (
-                          <option key={e._id} value={e._id}>
-                            {e.name}
+            <div className="modal-body p-30">
+              <form
+                className="premium-form"
+                onSubmit={async (e) => {
+                  e.preventDefault();
+                  if (!assignForm.userId || !assignForm.templateId) {
+                    toast.warning("Employee + Template required");
+                    return;
+                  }
+                  try {
+                    await tryPost(["/onboarding/assignment"], {
+                      userId: assignForm.userId,
+                      templateId: assignForm.templateId,
+                      dueDate: assignForm.dueDate ? new Date(assignForm.dueDate).toISOString() : undefined,
+                      note: assignForm.note || undefined,
+                    });
+                    toast.success("Onboarding assigned ✅");
+                    setShowAssignOnboardingModal(false);
+                    fetchDashboardData(true);
+                  } catch (err) {
+                    toast.error(getApiErrorMessage(err, "Failed to assign onboarding"));
+                  }
+                }}
+              >
+                <div className="form-row">
+                  <div className="form-group animate-slide-in-1">
+                    <label>Target Employee <span className="req">*</span></label>
+                    <div className="input-with-icon">
+                      <FaUserTie className="field-ic" />
+                      <select value={assignForm.userId} required onChange={(e) => setAssignForm({ ...assignForm, userId: e.target.value })}>
+                        <option value="">-- Choose Employee --</option>
+                        {employees
+                          .filter((e) => normalizeEmployee(e).isApproved)
+                          .map((e) => (
+                            <option key={e._id} value={e._id}>
+                              {e.name}
+                            </option>
+                          ))}
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="form-row">
+                  <div className="form-group animate-slide-in-2">
+                    <label>Select Template <span className="req">*</span></label>
+                    <div className="input-with-icon">
+                      <FaLayerGroup className="field-ic" />
+                      <select value={assignForm.templateId} required onChange={(e) => setAssignForm({ ...assignForm, templateId: e.target.value })}>
+                        <option value="">-- Choose Template --</option>
+                        {templates.map((t) => (
+                          <option key={t._id} value={t._id}>
+                            {t.title || t.name}
                           </option>
                         ))}
-                    </select>
+                      </select>
+                    </div>
                   </div>
+                </div>
 
-                  <div className="form-group">
-                    <label>
-                      <FaLayerGroup /> Template
-                    </label>
-                    <select value={assignForm.templateId} required onChange={(e) => setAssignForm({ ...assignForm, templateId: e.target.value })}>
-                      <option value="">-- Select Template --</option>
-                      {templates.map((t) => (
-                        <option key={t._id} value={t._id}>
-                          {t.title || t.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div className="form-row">
-                    <div className="form-group">
-                      <label>Due Date (Optional)</label>
+                <div className="form-row">
+                  <div className="form-group animate-slide-in-3">
+                    <label>Completion Deadline</label>
+                    <div className="input-with-icon">
+                      <FaCalendarAlt className="field-ic" />
                       <input type="date" value={assignForm.dueDate} onChange={(e) => setAssignForm({ ...assignForm, dueDate: e.target.value })} />
                     </div>
-                    <div className="form-group">
-                      <label>Note (Optional)</label>
-                      <input value={assignForm.note} onChange={(e) => setAssignForm({ ...assignForm, note: e.target.value })} placeholder="Instructions…" />
-                    </div>
                   </div>
+                </div>
 
+                <div className="form-group animate-slide-in-4">
+                  <label>Internal Note (Optional)</label>
+                  <textarea rows="2" value={assignForm.note} onChange={(e) => setAssignForm({ ...assignForm, note: e.target.value })} placeholder="Add specific instructions for this employee…" />
+                </div>
+
+                <div className="modal-actions-footer animate-slide-in-5">
+                  <button type="button" className="btn-secondary-sm full-width" onClick={() => setShowAssignOnboardingModal(false)}>Cancel</button>
                   <button type="submit" className="btn-primary full-width">
-                    Assign Onboarding
+                    <FaPlus /> Start Journey
                   </button>
-                </form>
-              </div>
+                </div>
+              </form>
             </div>
           </div>
-        )
-      }
+        </div>
+      )}
 
       {/* ================= STYLE ================= */}
       <style>{`
-        :root{
-          --primary:#ea580c;
-          --primary-dark:#c2410c;
-          --primary-light:#fff7ed;
-          --text-dark:#0f172a;
-          --text-gray:#64748b;
-          --border:#e5e7eb;
-          --bg:#f8fafc;
-          --white:#ffffff;
-          --shadow: 0 10px 30px rgba(0,0,0,0.05);
+        :root {
+          --primary: #50c8ff;
+          --primary-glow: rgba(80, 200, 255, 0.4);
+          --accent-violet: #a78bfa;
+          --accent-pink: #e879f9;
+          --bg-dark: #050714;
+          --card-glass: rgba(13, 17, 34, 0.6);
+          --border-glass: rgba(255, 255, 255, 0.1);
+          --text-bright: #ffffff;
+          --text-dim: rgba(255, 255, 255, 0.6);
+          --brand-grad: linear-gradient(135deg, #3b82f6, #8b5cf6, #e879f9);
         }
 
-        .hr-dashboard{
-          padding: 18px;
-          background: var(--bg);
+        .hr-dashboard {
+          padding: 24px;
+          background: radial-gradient(circle at 50% 50%, #0f172a, #050714);
           min-height: 100vh;
-          font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial;
-          max-width: 1440px;
+          font-family: 'Inter', sans-serif;
+          max-width: 100vw;
           margin: 0 auto;
+          color: var(--text-bright);
+          box-sizing: border-box;
+          overflow-x: hidden; /* Prevent horizontal scroll on small devices */
         }
 
         /* Header */
-        .dashboard-header{
-          display:flex;
-          justify-content:space-between;
-          align-items:center;
-          background: var(--white);
-          padding: 14px 16px;
-          border-radius: 16px;
-          border: 1px solid var(--border);
-          box-shadow: var(--shadow);
-          gap: 12px;
-          flex-wrap: wrap;
-          position: sticky;
-          top: 10px;
-          z-index: 20;
+        .dashboard-header {
+          display: flex; justify-content: space-between; align-items: center;
+          background: rgba(13, 17, 34, 0.8);
+          padding: 20px 28px;
+          border-radius: 24px;
+          border: 1px solid var(--border-glass);
+          box-shadow: 0 20px 50px rgba(0,0,0,0.4);
+          gap: 12px; flex-wrap: wrap;
+          position: sticky; top: 10px; z-index: 20;
+          backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
         }
-        .header-title{display:flex;gap:12px;align-items:center;}
-        .icon-box-header{
-          width: 46px; height: 46px;
-          background: linear-gradient(135deg, #fb923c, #ea580c);
-          color: white;
-          border-radius: 12px;
-          display:flex;align-items:center;justify-content:center;
-          font-size: 1.3rem;
+        .header-title { display: flex; gap: 18px; align-items: center; }
+        .icon-box-header {
+          width: 52px; height: 52px;
+          background: var(--brand-grad);
+          color: white; border-radius: 14px;
+          display: flex; align-items: center; justify-content: center;
+          font-size: 1.4rem; box-shadow: 0 10px 20px rgba(139, 92, 246, 0.3);
         }
-        .header-title h1{margin:0;font-size:1.2rem;color:var(--text-dark);font-weight:950;}
-        .header-title p{margin:2px 0 0;color:var(--text-gray);font-weight:700;font-size:.85rem;}
+        .header-title h1 { 
+          margin: 0; font-size: 1.4rem; font-weight: 900; 
+          background: linear-gradient(90deg, #fff, rgba(255,255,255,0.8));
+          -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        }
+        .header-title p { margin: 2px 0 0; color: var(--text-dim); font-weight: 700; font-size: .85rem; letter-spacing: 0.5px; }
 
-        .header-actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
-        .btn-refresh{
-          background: white;
-          border: 1px solid var(--primary);
-          color: var(--primary);
-          padding: 9px 14px;
-          border-radius: 12px;
+        .header-actions { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+        .btn-refresh {
+          background: rgba(80, 200, 255, 0.1);
+          border: 1px solid rgba(80, 200, 255, 0.3);
+          color: #50c8ff;
+          padding: 11px 18px;
+          border-radius: 14px;
           font-weight: 900;
           cursor: pointer;
-          display:flex;align-items:center;gap:8px;
+          display: flex; align-items: center; gap: 10px;
+          transition: 0.3s cubic-bezier(0.165, 0.84, 0.44, 1);
         }
-        .btn-refresh:disabled{opacity:.7;cursor:not-allowed;}
-        .btn-ghost{
-          background: #fff;
-          border: 1px solid var(--border);
-          padding: 9px 14px;
-          border-radius: 12px;
+        .btn-refresh:hover:not(:disabled) { background: rgba(80, 200, 255, 0.2); transform: translateY(-2px); box-shadow: 0 10px 20px rgba(80, 200, 255, 0.15); }
+        .btn-refresh:disabled { opacity: .5; cursor: not-allowed; }
+        
+        .btn-ghost {
+          background: rgba(255, 255, 255, 0.05);
+          border: 1px solid var(--border-glass);
+          padding: 11px 18px;
+          border-radius: 14px;
           font-weight: 900;
           cursor: pointer;
-          color: var(--text-dark);
+          color: #fff;
+          transition: 0.3s;
         }
+        .btn-ghost:hover { background: rgba(255, 255, 255, 0.1); }
 
         /* Stats strip */
-        .stats-strip{
-          margin: 14px 0 16px;
-          display:flex;
-          gap: 12px;
-          overflow-x:auto;
-          padding-bottom: 6px;
-          scroll-snap-type:x mandatory;
+        .stats-strip {
+          margin: 24px 0;
+          display: flex; gap: 16px;
+          overflow-x: auto; padding-bottom: 12px;
+          scrollbar-width: none;
         }
-        .stat-card{
-          min-width: 220px;
-          background: var(--white);
-          border: 1px solid var(--border);
-          border-radius: 18px;
-          padding: 14px 14px;
-          box-shadow: 0 8px 20px rgba(0,0,0,0.04);
-          display:flex;
-          justify-content:space-between;
-          align-items:center;
-          scroll-snap-align:start;
+        .stats-strip::-webkit-scrollbar { display: none; }
+        
+        .stat-card {
+          min-width: 240px;
+          background: rgba(13, 17, 34, 0.5);
+          border: 1px solid var(--border-glass);
+          border-radius: 24px;
+          padding: 20px 24px;
+          box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+          display: flex; justify-content: space-between; align-items: center;
+          transition: 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+          backdrop-filter: blur(10px);
         }
-        .stat-left{display:flex;flex-direction:column;gap:4px;}
-        .stat-value{font-size:1.6rem;font-weight:1000;color:var(--text-dark);line-height:1;}
-        .stat-title{font-size:.82rem;color:var(--text-gray);font-weight:900;letter-spacing:.4px;text-transform:uppercase;}
-        .stat-ic{font-size:2rem;opacity:.14;color:var(--text-dark);}
+        .stat-card:hover { transform: translateY(-5px); background: rgba(13, 17, 34, 0.7); border-color: rgba(255, 255, 255, 0.2); }
+        .stat-left { display: flex; flex-direction: column; gap: 6px; }
+        .stat-value { font-size: 1.8rem; font-weight: 900; color: #fff; line-height: 1; text-shadow: 0 0 20px rgba(255,255,255,0.1); }
+        .stat-title { font-size: .8rem; color: var(--text-dim); font-weight: 800; letter-spacing: 1px; text-transform: uppercase; }
+        .stat-ic { font-size: 1.8rem; background: var(--brand-grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent; filter: drop-shadow(0 0 10px rgba(139, 92, 246, 0.5)); }
 
-        .tone-orange{border-left:5px solid #ea580c;}
-        .tone-red{border-left:5px solid #dc2626;}
-        .tone-blue{border-left:5px solid #2563eb;}
-        .tone-green{border-left:5px solid #16a34a;}
-        .tone-violet{border-left:5px solid #7c3aed;}
-        .tone-teal{border-left:5px solid #0f766e;}
+        .tone-orange { border-bottom: 3px solid #f59e0b; }
+        .tone-red { border-bottom: 3px solid #ef4444; }
+        .tone-blue { border-bottom: 3px solid #3b82f6; }
+        .tone-green { border-bottom: 3px solid #10b981; }
+        .tone-violet { border-bottom: 3px solid #8b5cf6; }
+        .tone-teal { border-bottom: 3px solid #14b8a6; }
 
         /* Tabs */
-        .tabs-wrapper{overflow-x:auto;margin-bottom: 12px;}
-        .tabs-container{display:flex;gap:10px;min-width:max-content;}
-        .tab-btn{
-          background: white;
-          border: 1px solid var(--border);
-          padding: 10px 14px;
-          border-radius: 999px;
-          cursor:pointer;
-          display:flex;
-          align-items:center;
-          gap: 10px;
-          color: var(--text-gray);
-          font-weight: 950;
-          white-space:nowrap;
+        .tabs-wrapper { overflow-x: auto; margin-bottom: 20px; padding: 4px; }
+        .tabs-container { display: flex; gap: 12px; min-width: max-content; }
+        .tab-btn {
+          background: rgba(255, 255, 255, 0.05);
+          border: 1px solid var(--border-glass);
+          padding: 12px 22px;
+          border-radius: 16px;
+          cursor: pointer;
+          display: flex; align-items: center; gap: 12px;
+          color: var(--text-dim);
+          font-weight: 900;
+          white-space: nowrap;
+          transition: 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
         }
-        .tab-btn.active{
-          background: var(--primary);
-          border-color: var(--primary);
+        .tab-btn:hover:not(.active) { background: rgba(255, 255, 255, 0.1); color: #fff; }
+        .tab-btn.active {
+          background: var(--brand-grad);
+          border-color: transparent;
           color: #fff;
-          box-shadow: 0 10px 25px rgba(234,88,12,0.22);
+          box-shadow: 0 15px 35px rgba(139, 92, 246, 0.4);
+          transform: translateY(-2px);
         }
-        .tab-ic{display:inline-flex;}
-        .tab-badge{
-          background: #ef4444;
-          color: white;
-          padding: 2px 8px;
-          border-radius: 999px;
-          font-size: .75rem;
-          font-weight: 1000;
+        .tab-badge {
+          background: #ef4444; color: white;
+          padding: 2px 8px; border-radius: 8px;
+          font-size: .75rem; font-weight: 900;
+          box-shadow: 0 4px 10px rgba(239, 68, 68, 0.4);
         }
 
         /* Content */
-        .content-panel{
-          background: white;
-          border-radius: 16px;
-          padding: 16px;
-          box-shadow: var(--shadow);
-          border: 1px solid var(--border);
+        .content-panel {
+          background: rgba(13, 17, 34, 0.6);
+          border-radius: 28px;
+          padding: 28px;
+          box-shadow: 0 30px 60px rgba(0,0,0,0.5);
+          border: 1px solid var(--border-glass);
+          backdrop-filter: blur(20px);
+          width: 100%;
+          box-sizing: border-box;
         }
 
-        .section-head{
-          display:flex;
-          justify-content:space-between;
-          align-items:center;
-          gap: 12px;
-          margin-bottom: 12px;
-          flex-wrap: wrap;
+        .section-head {
+          display: flex; justify-content: space-between; align-items: center;
+          gap: 16px; margin-bottom: 24px; flex-wrap: wrap;
         }
-        .section-head h3{
-          margin:0;
-          font-size: 1.05rem;
-          font-weight: 1000;
-          color: var(--text-dark);
-          display:flex;align-items:center;gap:10px;
+        .section-head h3 {
+          margin: 0; font-size: 1.2rem; font-weight: 900;
+          background: linear-gradient(90deg, #50c8ff, #a78bfa);
+          -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+          display: flex; align-items: center; gap: 12px;
         }
-        .head-actions{display:flex;gap:10px;flex-wrap:wrap;}
-        .btn-primary-sm, .btn-secondary-sm{
-          border:none;
-          padding: 9px 12px;
-          border-radius: 12px;
-          font-weight: 950;
-          cursor:pointer;
-          display:flex;align-items:center;gap:8px;
-          white-space:nowrap;
+        .head-actions { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+        
+        .btn-primary-sm {
+          background: var(--brand-grad);
+          color: #fff; border: none; padding: 10px 20px;
+          border-radius: 14px; font-weight: 900; cursor: pointer;
+          display: flex; align-items: center; gap: 10px;
+          transition: 0.3s; box-shadow: 0 8px 15px rgba(139, 92, 246, 0.2);
         }
-        .btn-primary-sm{background: var(--primary); color:#fff;}
-        .btn-secondary-sm{background:#fff; border:1px solid var(--border); color: var(--text-dark);}
+        .btn-primary-sm:hover { transform: translateY(-2px); box-shadow: 0 12px 25px rgba(139, 92, 246, 0.4); }
 
-        /* Recruitment */
-        .recruitment-wrap{display:flex;flex-direction:column;gap:12px;}
-        .recruitment-head{display:flex;flex-direction:column;gap:10px;}
-        .subtabs{
-          display:flex;
-          gap:10px;
-          overflow-x:auto;
-          padding-bottom: 4px;
+        .btn-secondary-sm {
+          background: rgba(255, 255, 255, 0.05);
+          border: 1px solid var(--border-glass);
+          color: #fff; padding: 10px 20px;
+          border-radius: 14px; font-weight: 900; cursor: pointer;
+          transition: 0.3s;
         }
-        .subtab-btn{
-          background:#fff;
-          border:1px solid var(--border);
-          padding: 10px 12px;
-          border-radius: 14px;
-          cursor:pointer;
-          display:flex;
-          align-items:center;
-          gap:10px;
-          font-weight: 950;
-          color: var(--text-gray);
-          white-space:nowrap;
+        .btn-secondary-sm:hover { background: rgba(255, 255, 255, 0.1); border-color: #50c8ff; }
+
+        .recruitment-card, .onb-card, .holiday-card {
+          background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-glass);
+          border-radius: 24px; padding: 24px; margin-bottom: 20px;
         }
-        .subtab-btn.active{
-          border-color: rgba(234,88,12,0.35);
-          background: #fff7ed;
-          color: var(--primary);
-        }
-        .subtab-badge{
-          background: #0f172a;
-          color:#fff;
-          padding: 2px 8px;
-          border-radius: 999px;
-          font-size: .75rem;
-          font-weight: 1000;
-        }
-        .recruitment-card{
-          border:1px solid var(--border);
-          border-radius: 16px;
-          padding: 14px;
-          background:#fff;
-          box-shadow: 0 10px 25px rgba(0,0,0,0.03);
-        }
-        .stage-cell{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
-        .stage-select{
-          padding: 8px 10px;
-          border:1px solid var(--border);
-          border-radius: 12px;
-          font-weight: 900;
-          background:#fff;
-          outline:none;
-          min-width: 160px;
-        }
-        .stage-select:focus{border-color: var(--primary); box-shadow: 0 0 0 3px rgba(234,88,12,0.12);}
 
         /* Tables */
-        .table-responsive{overflow-x:auto;}
-        .modern-table{width:100%;border-collapse:collapse;min-width:980px;}
-        .modern-table.compact{min-width:860px;}
-        .modern-table th{
-          text-align:left;
-          padding: 12px 12px;
-          background:#f8fafc;
-          color:#64748b;
-          font-size:.8rem;
-          border-bottom: 2px solid var(--border);
-          white-space:nowrap;
-          text-transform:uppercase;
-          letter-spacing:.7px;
-          font-weight: 1000;
+        .table-responsive { overflow-x: auto; border-radius: 18px; border: 1px solid var(--border-glass); }
+        .modern-table { width: 100%; border-collapse: collapse; min-width: 980px; background: rgba(255, 255, 255, 0.02); }
+        .modern-table th {
+          text-align: left; padding: 16px;
+          background: rgba(255, 255, 255, 0.05);
+          color: rgba(255, 255, 255, 0.5);
+          font-size: .75rem; border-bottom: 1px solid var(--border-glass);
+          text-transform: uppercase; letter-spacing: 1.5px; font-weight: 900;
         }
-        .modern-table td{
-          padding: 12px 12px;
-          border-bottom: 1px solid #f1f5f9;
-          vertical-align: middle;
-          font-size: .92rem;
-          font-weight: 750;
+        .modern-table td {
+          padding: 16px; border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+          vertical-align: middle; font-size: .9rem; font-weight: 600; color: #fff;
         }
-        .empty-row{padding:18px !important; text-align:center; color:#94a3b8; font-weight:950;}
+        .modern-table tr:hover { background: rgba(80, 200, 255, 0.05); }
 
-        /* Cells */
-        .user-cell{display:flex;align-items:center;gap:12px;}
-        .avatar-circle{
-          width:36px;height:36px;border-radius:50%;
-          background: var(--primary-light);
-          color: var(--primary);
-          display:flex;align-items:center;justify-content:center;
-          font-weight: 1000;
+        .status-pill {
+          padding: 6px 14px; border-radius: 999px;
+          font-size: .72rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px;
+          border: 1px solid rgba(255, 255, 255, 0.1); background: rgba(255, 255, 255, 0.05); color: #fff;
         }
-        .role-tag{
-          background:#fff7ed;
-          color: var(--primary);
-          padding: 6px 10px;
-          border-radius: 999px;
-          font-size:.8rem;
-          font-weight: 950;
-          white-space:nowrap;
+        .status-pill.active, .status-pill.verified { 
+          background: rgba(16, 185, 129, 0.1); color: #10b981; border-color: rgba(16, 185, 129, 0.3);
+          box-shadow: 0 0 15px rgba(16, 185, 129, 0.15);
+        }
+        .status-pill.pending { 
+          background: rgba(245, 158, 11, 0.1); color: #f59e0b; border-color: rgba(245, 158, 11, 0.3);
         }
 
-        .status-pill{
-          padding: 6px 10px;
-          border-radius: 999px;
-          font-size:.78rem;
-          font-weight: 1000;
-          white-space:nowrap;
-          text-transform: capitalize;
-          border: 1px solid rgba(226,232,240,0.9);
-          background: #f8fafc;
-          color: #0f172a;
-        }
-        .status-pill.active, .status-pill.verified{
-          background:#dcfce7;color:#166534;border-color:#bbf7d0;
-        }
-        .status-pill.pending{
-          background:#fef9c3;color:#a16207;border-color:#fde68a;
-        }
-        .status-pill.approved{
-          background:#dcfce7;color:#166534;border-color:#bbf7d0;
-        }
-        .status-pill.rejected{
-          background:#fee2e2;color:#991b1b;border-color:#fecaca;
-        }
-        .status-pill.completed{
-          background:#e0f2fe;color:#075985;border-color:#bae6fd;
-        }
-        .status-pill.in-progress, .status-pill.inprogress{
-          background:#e0e7ff;color:#3730a3;border-color:#c7d2fe;
+        .avatar-circle {
+          width: 38px; height: 38px; border-radius: 12px;
+          background: rgba(80, 200, 255, 0.1); color: #50c8ff;
+          display: flex; align-items: center; justify-content: center;
+          font-weight: 900; border: 1px solid rgba(80, 200, 255, 0.2);
         }
 
-        .priority-badge{
-          padding: 4px 8px;
-          border-radius: 8px;
-          font-size: .72rem;
-          font-weight: 1000;
-          text-transform: uppercase;
-          letter-spacing:.6px;
-          border: 1px solid rgba(226,232,240,0.9);
-          white-space:nowrap;
+        /* Pagination & Search */
+        .pagination-controls { display: flex; align-items: center; justify-content: flex-end; gap: 16px; margin-top: 20px; }
+        .pg-btn {
+          background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border-glass);
+          color: #fff; padding: 8px 16px; border-radius: 12px; cursor: pointer;
+          display: flex; align-items: center; gap: 8px; font-weight: 800; transition: 0.3s;
         }
-        .priority-badge.high{background:#fee2e2;color:#991b1b;border-color:#fecaca;}
-        .priority-badge.medium{background:#ffedd5;color:#9a3412;border-color:#fed7aa;}
-        .priority-badge.low{background:#dcfce7;color:#166534;border-color:#bbf7d0;}
+        .pg-btn:hover:not(:disabled) { background: rgba(80, 200, 255, 0.1); border-color: #50c8ff; }
+        .pg-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+        .pg-info { font-size: 13px; color: var(--text-dim); font-weight: 700; }
 
-        .action-row{display:flex;gap:8px;}
-        .right-align,.j-end{justify-content:flex-end;}
-        .btn-icon{
-          width:34px;height:34px;
-          border-radius: 10px;
-          border:none;cursor:pointer;
-          display:flex;align-items:center;justify-content:center;
+        .search-box-sm {
+          display: flex; align-items: center; background: rgba(255, 255, 255, 0.03);
+          border: 1px solid var(--border-glass); border-radius: 14px; padding: 6px 14px;
+          width: 240px; transition: 0.3s;
         }
-        .btn-icon.approve{background:#dcfce7;color:#166534;}
-        .btn-icon.view{background:#e0f2fe;color:#0284c7;}
-        .btn-icon.delete{background:#fee2e2;color:#dc2626;}
-
-        .btn-xs{
-          padding: 7px 10px;
-          border-radius: 10px;
-          border:none;
-          cursor:pointer;
-          font-size:.78rem;
-          font-weight: 1000;
-          display:inline-flex;
-          align-items:center;
-          gap:8px;
-          white-space:nowrap;
-        }
-        .btn-xs.approve{background:#dcfce7;color:#166534;}
-        .btn-xs.reject{background:#fee2e2;color:#991b1b;}
-        .btn-xs.view-details{background:#eff6ff;color:#1e40af;}
-
-        .reason-cell{max-width: 320px; color:#334155;}
-
-        /* Files cell */
-        .files-cell{display:flex;flex-direction:column;gap:8px;}
-        .chip-row{display:flex;flex-wrap:wrap;gap:8px;}
-        .chip-file{
-          border:1px solid var(--border);
-          background:#fff;
-          padding:6px 10px;
-          border-radius:999px;
-          font-weight:900;
-          cursor:pointer;
-          display:flex;align-items:center;gap:8px;
-          font-size:.78rem;
-        }
-        .chip-link{
-          display:inline-flex;align-items:center;gap:8px;
-          border:1px solid var(--border);
-          background:#fff;
-          padding:6px 10px;
-          border-radius:999px;
-          font-weight:950;
-          text-decoration:none;
-          color:#0f172a;
-          width: fit-content;
-        }
-        .muted{color:#94a3b8;font-weight:900;}
-        .dt{display:flex;align-items:center;gap:8px;}
-        .dt-ic{color:#ea580c;opacity:.9}
-
-        .sub-note{
-          margin-top: 12px;
-          color:#64748b;
-          font-weight: 800;
-          font-size: .85rem;
-          line-height: 1.4;
+        .search-box-sm:focus-within { border-color: #50c8ff; background: rgba(80, 200, 255, 0.05); }
+        .search-ic { color: var(--text-dim); margin-right: 10px; font-size: 14px; }
+        .search-box-sm input {
+          border: none; background: transparent; color: #fff; outline: none;
+          font-size: 13px; font-weight: 600; width: 100%;
         }
 
-        /* Onboarding */
-        .onb-wrap{display:flex;flex-direction:column;gap:12px;}
-        .onb-grid{
-          display:grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 12px;
+        /* Recruitment Subtabs */
+        .subtabs { display: flex; gap: 10px; margin-bottom: 20px; overflow-x: auto; padding-bottom: 8px; }
+        .subtab-btn {
+          background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-glass);
+          padding: 10px 18px; border-radius: 14px; color: var(--text-dim);
+          cursor: pointer; display: flex; align-items: center; gap: 10px;
+          font-weight: 800; transition: 0.3s; white-space: nowrap;
         }
-        .onb-card{
-          border:1px solid var(--border);
-          border-radius: 16px;
-          background: #fff;
-          padding: 12px;
-          box-shadow: 0 8px 20px rgba(0,0,0,0.03);
-          min-height: 240px;
-        }
-        .onb-head{
-          display:flex;justify-content:space-between;align-items:center;
-          padding-bottom: 10px;
-          border-bottom: 1px solid #f1f5f9;
-          margin-bottom: 10px;
-        }
-        .onb-head h4{margin:0;font-weight:1000;color:#0f172a;}
-        .onb-list{display:flex;flex-direction:column;gap:10px;}
-        .onb-item{
-          display:flex;justify-content:space-between;align-items:center;
-          gap: 12px;
-          border: 1px solid #f1f5f9;
-          border-radius: 14px;
-          padding: 10px;
-          background: #fafafa;
-        }
-        .onb-title{font-weight:1000;color:#0f172a;}
-        .onb-sub{font-size:.82rem;color:#64748b;font-weight:850;margin-top:2px;}
-        .empty-mini{color:#94a3b8;font-weight:950;padding:12px;border:1px dashed #e2e8f0;border-radius:14px;background:#f8fafc;}
+        .subtab-btn:hover:not(.active) { background: rgba(255, 255, 255, 0.08); color: #fff; }
+        .subtab-btn.active { background: rgba(80, 200, 255, 0.1); border-color: #50c8ff; color: #50c8ff; }
+        .subtab-badge { background: #50c8ff; color: #050714; padding: 2px 8px; border-radius: 8px; font-size: 11px; font-weight: 900; }
 
-        /* Pill */
-        .pill{
-          padding: 6px 10px;
-          border-radius: 999px;
-          font-weight: 1000;
-          font-size: .78rem;
-          border: 1px solid rgba(226,232,240,0.9);
-          background: #f8fafc;
-          color:#0f172a;
-          white-space:nowrap;
+        .stage-select {
+          background: rgba(13, 17, 34, 0.6); border: 1px solid var(--border-glass);
+          color: #fff; padding: 8px 12px; border-radius: 12px; outline: none;
+          font-weight: 700; cursor: pointer; transition: 0.3s;
         }
-        .pill-neutral{background:#f8fafc;color:#0f172a;border-color:#e2e8f0;}
-        .pill-info{background:#e0f2fe;color:#075985;border-color:#bae6fd;}
-        .pill-blue{background:#dbeafe;color:#1e40af;border-color:#bfdbfe;}
-        .pill-green{background:#dcfce7;color:#166534;border-color:#bbf7d0;}
-        .pill-red{background:#fee2e2;color:#991b1b;border-color:#fecaca;}
+        .stage-select:focus { border-color: #50c8ff; }
 
-        /* Holiday */
-        .holiday-container{display:flex;justify-content:center;padding: 10px;}
-        .holiday-card{
-          width: 100%;
-          max-width: 520px;
-          border:1px solid var(--border);
-          border-radius: 18px;
-          padding: 16px;
-          background:#fff;
-          box-shadow: 0 10px 25px rgba(0,0,0,0.04);
+        .btn-xs {
+          padding: 6px 12px; border-radius: 10px; border: none; cursor: pointer;
+          font-size: 11px; font-weight: 800; text-transform: uppercase;
+          transition: 0.3s; margin-left: 6px;
         }
-        .holiday-card h3{margin:0 0 10px;font-weight:1000;color:#0f172a;display:flex;gap:10px;align-items:center;}
-        .holiday-form{display:flex;flex-direction:column;gap:12px;}
-        .form-group label{
-          display:block;
-          font-weight:900;
-          font-size:.82rem;
-          color:#475569;
-          margin-bottom: 6px;
+        .btn-xs.approve { background: rgba(16, 185, 129, 0.1); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.3); }
+        .btn-xs.reject { background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); }
+        .btn-xs:hover { filter: brightness(1.2); transform: translateY(-1px); }
+
+        /* Modals */
+        .modal-overlay {
+          position: fixed; inset: 0; background: rgba(5, 7, 20, 0.85);
+          display: flex; align-items: flex-start; justify-content: center;
+          z-index: 1000; padding: 40px 10px; backdrop-filter: blur(12px);
+          overflow-y: auto; /* ALLOW OVERLAY TO SCROLL */
+          -webkit-overflow-scrolling: touch;
         }
-        .form-group input, .form-group select, textarea{
-          width:100%;
-          padding: 10px 12px;
-          border: 1px solid var(--border);
-          border-radius: 12px;
-          outline:none;
-          font-weight: 800;
-          box-sizing:border-box;
-          background:#fff;
+        .modal-card {
+          background: rgba(13, 17, 34, 0.95);
+          width: 95%; max-width: 580px; border-radius: 28px;
+          margin: auto; /* Vertical centering */
+          overflow: visible; /* Let children handle their own scroll overflow if needed, but card needs to be visible */
+          box-shadow: 0 50px 100px rgba(0,0,0,0.6);
+          border: 1px solid var(--border-glass); backdrop-filter: blur(20px);
+          color: #fff;
+          position: relative;
         }
-        textarea{resize:none;}
-        .form-row{
-          display:grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 10px;
+        .modal-card.wide { max-width: 900px; }
+
+        .modal-header {
+          padding: 24px 30px; border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+          background: linear-gradient(135deg, rgba(80, 200, 255, 0.05), transparent);
+          display: flex; justify-content: space-between; align-items: center;
+          position: sticky; top: 0; z-index: 10;
+          background: rgba(13, 17, 34, 0.98);
+          border-top-left-radius: 28px; border-top-right-radius: 28px;
+        }
+        .modal-body { 
+          padding: 24px 24px 40px 24px; /* Increased bottom padding for buttom gap */
+          min-height: min-content;
+        }
+        .modal-header h3 { 
+          margin: 0; font-size: 1.15rem; font-weight: 950; 
+          background: var(--brand-grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+          letter-spacing: -0.5px;
+        }
+        .close-btn { 
+          width: 34px; height: 34px; border-radius: 50%; background: rgba(255, 255, 255, 0.08);
+          border: 1px solid var(--border-glass); cursor: pointer; color: #fff;
+          display: grid; place-items: center; transition: 0.3s;
         }
 
-        .btn-primary{
-          background: var(--primary);
-          color:#fff;
-          border:none;
-          border-radius: 12px;
-          padding: 12px;
-          font-weight: 1000;
-          cursor:pointer;
-        }
-        .btn-primary:hover{background: var(--primary-dark);}
-        .full-width{width:100%;}
+        .close-btn:hover { background: rgba(239, 68, 68, 0.15); color: #ef4444; border-color: #ef4444; transform: rotate(90deg); }
 
-        /* Modal */
-        .modal-overlay{
-          position: fixed; inset:0;
-          background: rgba(2,6,23,0.55);
-          display:flex;align-items:center;justify-content:center;
-          z-index: 1000;
-          padding: 16px;
-          backdrop-filter: blur(6px);
+        .form-group { display: flex; flex-direction: column; width: 100%; }
+        .form-group label { color: var(--text-dim); font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+        .form-group input, .form-group select, .form-group textarea {
+          background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-glass);
+          border-radius: 14px; padding: 12px 16px; color: #fff; font-weight: 600; outline: none;
+          width: 100%; box-sizing: border-box; transition: 0.3s;
         }
-        .modal-card{
-          background:#fff;
-          width: 100%;
-          max-width: 520px;
-          border-radius: 18px;
-          overflow:hidden;
-          box-shadow: 0 30px 70px rgba(0,0,0,0.22);
-          border: 1px solid rgba(226,232,240,0.9);
-        }
-        .modal-card.wide { max-width: 700px; }
-        .modal-header{
-          display:flex;justify-content:space-between;align-items:center;
-          padding: 12px 14px;
-          background:#f8fafc;
-          border-bottom:1px solid var(--border);
-        }
-        .modal-header h3{margin:0;font-weight:1000;color:#0f172a;}
-        .close-btn{
-          width:38px;height:38px;border-radius:12px;
-          border:1px solid var(--border);
-          background:#fff;
-          cursor:pointer;
-          display:grid;place-items:center;
-        }
-        .modal-body{padding: 14px;}
-        .emp-name-display{
-          background:#fff7ed;
-          color: var(--primary);
-          border: 1px solid #fed7aa;
-          border-radius: 14px;
-          padding: 10px 12px;
-          font-weight: 1000;
-          display:flex;align-items:center;gap:10px;
-          margin: 0 0 12px;
-        }
-        .mini-note{margin-top:6px;color:#94a3b8;font-weight:900;font-size:.82rem;}
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: #50c8ff; background: rgba(80, 200, 255, 0.05); }
 
-        .animate-up{animation: slideUp .35s ease-out;}
-        @keyframes slideUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
-        .animate-pop{animation: pop .22s ease-out;}
-        @keyframes pop{from{transform:scale(.96);opacity:.4}to{transform:scale(1);opacity:1}}
-
-        .spin{animation: spin 1s linear infinite;}
-        @keyframes spin{to{transform:rotate(360deg)}}
-
-        .text-right{text-align:right;}
-        .text-muted{color:#94a3b8;font-weight:900;}
-        .text-sm{font-size:.82rem;}
-
-        /* Responsive */
-        @media(max-width: 980px){
-          .modern-table{min-width: 860px;}
-          .modern-table.compact{min-width: 820px;}
-          .onb-grid{grid-template-columns: 1fr;}
+        .form-row { display: flex; gap: 16px; width: 100%; }
+        @media (max-width: 640px) { 
+          .form-row { flex-direction: column; gap: 0; } 
+          .form-row > .form-group { margin-bottom: 12px; }
+          .form-group { width: 100%; }
         }
-        @media(max-width: 720px){
-          .hr-dashboard{padding: 12px;}
-          .content-panel{padding: 12px;}
-          .form-row{grid-template-columns: 1fr;}
-          .stat-card{min-width: 200px;}
-          .recruitment-card{padding: 12px;}
+
+        .btn-primary {
+          background: var(--brand-grad); color: #fff; border: none; padding: 14px;
+          border-radius: 16px; font-weight: 900; cursor: pointer; text-transform: uppercase; letter-spacing: 1px;
+          transition: 0.4s cubic-bezier(0.165, 0.84, 0.44, 1); box-shadow: 0 10px 25px rgba(139, 92, 246, 0.3);
+        }
+        .btn-primary.full-width { margin-top: 24px; } /* Added gap before created button */
+        .btn-primary:hover:not(:disabled) { transform: translateY(-3px); box-shadow: 0 15px 35px rgba(139, 92, 246, 0.5); filter: brightness(1.1); }
+
+        /* Loader */
+        .loader-screen {
+          height: 100vh; background: radial-gradient(circle at 50% 50%, #0f172a, #050714);
+          display: grid; place-items: center; color: #fff;
+        }
+        .loader-card { text-align: center; }
+        .spinner-container {
+          position: relative; width: 80px; height: 80px; margin: 0 auto 24px;
+          display: flex; align-items: center; justify-content: center;
+        }
+        .spinner-ring {
+          position: absolute; inset: 0; border: 2px solid rgba(80, 200, 255, 0.1);
+          border-radius: 50%; border-top-color: #50c8ff;
+          animation: spin 1s cubic-bezier(0.55, 0.17, 0.21, 0.76) infinite;
+        }
+        .spinner-kinetic {
+          position: absolute; inset: 10px; border: 2px solid transparent;
+          border-radius: 50%; border-left-color: #a78bfa; border-right-color: #e879f9;
+          animation: spin 1.5s linear infinite reverse;
+        }
+        .loader-ic { font-size: 24px; color: #50c8ff; filter: drop-shadow(0 0 10px rgba(80, 200, 255, 0.5)); animation: pulse 2s ease-in-out infinite; }
+
+        .ld-title { font-size: 1.5rem; font-weight: 900; background: var(--brand-grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .ld-sub { color: var(--text-dim); margin-top: 8px; font-weight: 600; font-size: 0.9rem; }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes pulse { 0%, 100% { opacity: 0.6; transform: scale(0.9); } 50% { opacity: 1; transform: scale(1.1); } }
+        .animate-pop { animation: pop 0.4s cubic-bezier(0.165, 0.84, 0.44, 1); }
+        @keyframes pop { from { opacity: 0; transform: scale(0.95) translateY(20px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+
+        .onb-item:hover { background: rgba(255, 255, 255, 0.05); transform: translateX(5px); border-color: rgba(80, 200, 255, 0.2); }
+
+        /* Hide mobile cards on desktop */
+        .mobile-cards { display: none; }
+
+        /* Responsive Media Queries */
+        @media (max-width: 1024px) {
+          .hr-dashboard { padding: 15px; }
+          .stat-card { min-width: 200px; padding: 15px 20px; }
+          .stat-value { font-size: 1.4rem; }
+        }
+
+        @media (max-width: 768px) {
+          .dashboard-header { padding: 15px 20px; border-radius: 18px; position: static; }
+          .header-title h1 { font-size: 1.1rem; }
+          .header-title p { font-size: 0.75rem; }
+          .icon-box-header { width: 42px; height: 42px; font-size: 1.1rem; }
+          
+          .desktop-only { display: none !important; }
+          .mobile-cards { display: grid; gap: 15px; margin-top: 10px; }
+          
+          .m-card {
+            background: rgba(255,255,255,0.03); 
+            border: 1px solid var(--border-glass);
+            border-radius: 18px; 
+            padding: 16px;
+            display: flex; flex-direction: column; gap: 12px;
+          }
+          .m-card-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+          .m-title { font-weight: 800; font-size: 1rem; color: #fff; }
+          .m-card-body { display: flex; flex-direction: column; gap: 6px; }
+          .m-item { font-size: 0.85rem; color: var(--text-dim); }
+          .m-item strong { color: rgba(255,255,255,0.9); margin-right: 4px; }
+          .m-card-actions { 
+            display: flex; gap: 10px; flex-wrap: wrap; 
+            padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.05);
+            margin-top: 5px;
+          }
+          .m-card-actions .btn-icon {
+            flex: 1; min-width: 100px;
+            justify-content: center;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid var(--border-glass);
+            color: #fff; padding: 10px; border-radius: 10px;
+            font-size: 0.8rem; font-weight: 700;
+            display: flex; align-items: center; gap: 8px;
+            cursor: pointer; transition: 0.2s;
+          }
+          .m-card-actions .btn-icon.view:hover { background: rgba(80, 200, 255, 0.2); }
+          .m-card-actions .btn-icon.delete:hover { background: rgba(239, 68, 68, 0.2); }
+          .m-card-actions .btn-icon.approve:hover { background: rgba(34, 197, 94, 0.2); }
+
+          .stats-strip { margin: 15px 0; gap: 12px; }
+          .tabs-container { gap: 8px; }
+          .tab-btn { padding: 10px 16px; font-size: 0.85rem; border-radius: 12px; }
+          .content-panel { padding: 20px; border-radius: 20px; }
+          .section-head h3 { font-size: 1rem; }
+        }
+
+        /* Media queries relocated to end for correct override cascade */
+
+        @media (max-width: 480px) {
+          .hr-dashboard { padding: 10px 10px 40px 10px; } /* Increased bottom gap */
+          .dashboard-header { padding: 12px; gap: 15px; }
+          .header-actions { width: 100%; display: grid; grid-template-columns: 1fr; gap: 8px; }
+          .btn-refresh, .btn-ghost { padding: 10px; font-size: 0.75rem; width: 100%; justify-content: center; }
+          .m-card-actions .btn-icon { min-width: 100%; }
+          .modal-card { border-radius: 20px; margin-bottom: 40px; } /* Card gap for small screens */
+          .modal-header { padding: 18px 20px; }
+          .p-30 { padding: 20px !important; }
+          .modal-actions-footer { flex-direction: column; gap: 8px; }
+          .modal-actions-footer button { width: 100% !important; margin: 0 !important; }
+          .head-actions { width: 100%; display: grid; grid-template-columns: 1fr; gap: 12px; margin-top: 5px; }
+          .head-actions .btn-primary-sm, .head-actions .btn-secondary-sm, .head-actions .search-box-sm { 
+            width: 100%; height: 48px; border-radius: 16px; justify-content: center; font-size: 0.95rem; 
+            margin: 0; box-sizing: border-box;
+          }
+          .head-actions .search-box-sm { padding: 0 16px; }
+          .head-actions .search-box-sm input { font-size: 0.95rem; }
+          .btn-secondary-sm { background: rgba(255, 255, 255, 0.08); border-color: rgba(255, 255, 255, 0.2); }
+          .content-panel { padding: 15px; padding-bottom: 40px; }
+        }
+
+        /* PREMIUM NEW STYLES */
+        .modal-title-wrap { display: flex; align-items: center; gap: 15px; }
+        .modal-icon-hex {
+          width: 40px; height: 40px; background: rgba(80, 200, 255, 0.1);
+          border: 1px solid rgba(80, 200, 255, 0.3); border-radius: 10px;
+          display: grid; place-items: center; color: #50c8ff; font-size: 1.2rem;
+        }
+        .modal-icon-hex.variant-teal { background: rgba(20, 184, 166, 0.1); border-color: rgba(20, 184, 166, 0.3); color: #14b8a6; }
+        
+        .p-30 { padding: 30px !important; }
+        .premium-form { display: flex; flex-direction: column; gap: 20px; }
+        
+        .input-with-icon { position: relative; display: flex; align-items: center; }
+        .field-ic { position: absolute; left: 14px; color: var(--text-dim); pointer-events: none; transition: 0.3s; }
+        .input-with-icon input, .input-with-icon select { padding-left: 42px !important; width: 100%; }
+        .input-with-icon input:focus + .field-ic, .input-with-icon select:focus + .field-ic { color: #50c8ff; }
+        
+        .textarea-wrapper { display: flex; flex-direction: column; gap: 6px; }
+        .textarea-stats { align-self: flex-end; font-size: 10px; font-weight: 800; color: #50c8ff; text-transform: uppercase; background: rgba(80, 200, 255, 0.05); padding: 2px 8px; border-radius: 6px; }
+        
+        .modal-actions-footer { display: flex; gap: 12px; margin-top: 24px; }
+        .req { color: #ef4444; margin-left: 2px; }
+        .helper-hint { font-size: 10px; color: var(--text-dim); font-style: italic; text-transform: none; letter-spacing: 0; opacity: 0.8; }
+        
+        /* Animations */
+        @keyframes slideInUp {
+          from { opacity: 0; transform: translateY(15px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-slide-in-1 { animation: slideInUp 0.3s ease-out forwards; }
+        .animate-slide-in-2 { animation: slideInUp 0.3s ease-out 0.1s forwards; opacity: 0; }
+        .animate-slide-in-3 { animation: slideInUp 0.3s ease-out 0.2s forwards; opacity: 0; }
+        .animate-slide-in-4 { animation: slideInUp 0.3s ease-out 0.3s forwards; opacity: 0; }
+        .animate-slide-in-5 { animation: slideInUp 0.3s ease-out 0.4s forwards; opacity: 0; }
+
+        .modal-card.wide { max-width: 800px; }
+        
+        .onb-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; width: 100%; box-sizing: border-box; }
+        .onb-list { display: flex; flex-direction: column; gap: 10px; margin-top: 15px; }
+        .onb-item { 
+          display: flex; justify-content: space-between; align-items: center; 
+          padding: 14px; background: rgba(255, 255, 255, 0.02); 
+          border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 16px;
+          transition: 0.3s;
+        }
+        .onb-item-left { display: flex; align-items: center; gap: 12px; }
+        .onb-icon-static {
+          width: 32px; height: 32px; background: rgba(80, 200, 255, 0.05);
+          border: 1px solid rgba(80, 200, 255, 0.1); border-radius: 8px;
+          display: grid; place-items: center; color: #50c8ff; font-size: 0.9rem;
+        }
+        .onb-icon-static.variant-teal { background: rgba(20, 184, 166, 0.05); border-color: rgba(20, 184, 166, 0.1); color: #14b8a6; }
+        
+        .onb-title { font-weight: 800; font-size: 0.95rem; color: #fff; }
+        .onb-sub { font-size: 0.75rem; color: var(--text-dim); margin-top: 2px; }
+        .sub-note { margin-top: 15px; font-size: 0.75rem; color: #50c8ff; font-style: italic; background: rgba(80, 200, 255, 0.05); padding: 10px; border-radius: 10px; }
+        .empty-mini { padding: 20px; text-align: center; color: var(--text-dim); font-size: 0.85rem; font-style: italic; }
+
+        @media (max-width: 768px) {
+          .onb-grid { grid-template-columns: 1fr; gap: 15px; }
+        }
+        @media (max-width: 480px) {
+          .onb-card { padding: 15px; border-radius: 18px; }
+          .onb-item { padding: 10px; }
+          .onb-icon-static { width: 28px; height: 28px; font-size: 0.8rem; }
         }
       `}</style>
     </div >

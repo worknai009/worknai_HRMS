@@ -1,6 +1,13 @@
 // Backend/controllers/employeeController.js
 const User = require('../models/User');
 const Leave = require('../models/Leave');
+const path = require('path');
+
+const relUploadPath = (absPath) => {
+  const rel = path.relative(process.cwd(), absPath).split(path.sep).join('/');
+  return rel;
+};
+
 
 let getDateStringInTZ;
 try {
@@ -140,7 +147,36 @@ const submitWfhRequest = async (req, res) => {
   }
 };
 
+const updateProfileImage = async (req, res) => {
+  console.log("--> HIT /profile-image");
+  try {
+    const userId = getReqUserId(req);
+    if (!userId) return res.status(401).json({ message: 'Unauthorized' });
+
+    if (!req.file) {
+      return res.status(400).json({ message: 'No image file uploaded' });
+    }
+
+    const imagePath = relUploadPath(req.file.path);
+
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    user.profileImage = imagePath;
+    await user.save();
+
+    return res.json({
+      message: 'Profile image updated successfully ✅',
+      profileImage: imagePath
+    });
+  } catch (error) {
+    console.error('Update Profile Image Error:', error);
+    return res.status(500).json({ message: 'Server Error' });
+  }
+};
+
 module.exports = {
   getMyProfile,
-  submitWfhRequest
+  submitWfhRequest,
+  updateProfileImage
 };

@@ -106,7 +106,7 @@ const getMyTasks = async (req, res) => {
   try {
     const { page, limit, skip } = parsePagination(req);
     const q = { assignedTo: req.user._id, companyId: req.user.companyId };
-    
+
     // Employee can filter by status
     if (req.query.status) q.status = req.query.status;
 
@@ -124,10 +124,10 @@ const getAllTasks = async (req, res) => {
   try {
     if (!isHrRole(req.user.role)) return res.status(403).json({ message: 'Access Denied' });
     const { page, limit, skip } = parsePagination(req);
-    
+
     // HR sees all tasks for their company
     const q = { companyId: req.user.companyId };
-    
+
     const [items, total] = await Promise.all([
       Task.find(q)
         .populate('assignedTo', 'name email designation')
@@ -155,9 +155,9 @@ const updateTaskStatus = async (req, res) => {
     // ✅ FIX: If HR, they can update any task in their company. If Employee, only their own task.
     const query = { _id: taskId };
     if (!isHrRole(req.user.role)) {
-        query.assignedTo = req.user._id;
+      query.assignedTo = req.user._id;
     } else {
-        query.companyId = req.user.companyId;
+      query.companyId = req.user.companyId;
     }
 
     const task = await Task.findOne(query);
@@ -166,13 +166,13 @@ const updateTaskStatus = async (req, res) => {
     // Validate Status
     const validStatuses = ['Pending', 'In Progress', 'Completed', 'Verified', 'Rejected', 'Needs Rework'];
     if (!validStatuses.includes(status)) {
-        return res.status(400).json({ message: 'Invalid status value' });
+      return res.status(400).json({ message: 'Invalid status value' });
     }
 
     task.status = status;
     await task.save();
     return res.json({ message: `Task marked as ${status}`, task });
-    
+
   } catch (err) {
     console.error(err);
     return res.status(500).json({ message: 'Update failed' });
@@ -224,10 +224,10 @@ const reviewTask = async (req, res) => {
   try {
     if (!isHrRole(req.user.role)) return res.status(403).json({ message: 'Access Denied' });
     const { taskId } = req.params;
-    
+
     // Accept 'action' OR 'status' to be flexible with frontend
     const { action, comment, status } = req.body;
-    const finalAction = action || status; 
+    const finalAction = action || status;
 
     const task = await Task.findOne({ _id: taskId, companyId: req.user.companyId });
     if (!task) return res.status(404).json({ message: 'Task not found' });
@@ -243,7 +243,7 @@ const reviewTask = async (req, res) => {
     if (finalAction === 'Approved' || finalAction === 'Verified') task.status = 'Verified';
     else if (finalAction === 'Rejected') task.status = 'Rejected';
     else if (finalAction === 'Needs Rework' || finalAction === 'In Progress') task.status = 'Needs Rework';
-    
+
     await task.save();
     return res.json({ message: `Task status updated to ${task.status}`, task });
   } catch (err) {
@@ -266,12 +266,12 @@ const downloadTaskAttachment = async (req, res) => {
     // Security check: is user related to task?
     const isHr = isHrRole(req.user.role);
     const isOwner = task.assignedTo.toString() === req.user._id.toString();
-    
+
     // If not HR and not Owner, block
     if (!isHr && !isOwner) return res.status(403).json({ message: 'Unauthorized' });
 
     if (!attachmentUrlExistsInTask(task, url)) {
-        return res.status(403).json({ message: 'File not linked to task' });
+      return res.status(403).json({ message: 'File not linked to task' });
     }
 
     const fullPath = safeResolveUnderUploads(url.replace(/^uploads\//, ''));

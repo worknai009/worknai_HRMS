@@ -26,6 +26,7 @@ const userSchema = new mongoose.Schema(
     },
 
     designation: { type: String, default: 'Staff' },
+    employmentType: { type: String, enum: ['Intern', 'On-Roll'], default: 'On-Roll', index: true },
 
     // salary
     salary: { type: Number, default: 0 },       // keep old

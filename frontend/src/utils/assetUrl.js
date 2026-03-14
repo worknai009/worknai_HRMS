@@ -43,7 +43,14 @@ export const getAssetUrl = (path) => {
   if (typeof path !== "string") return null;
   if (path.startsWith("http")) return path;
 
+  // Cleanup: Forward slashes + no leading/trailing whitespace
+  let clean = path.replace(/\\/g, "/").trim().replace(/^\/+/, "");
+
+  // Fix: Some DB paths might accidentally include "Backend/" prefix
+  if (clean.toLowerCase().startsWith("backend/")) {
+    clean = clean.substring(8);
+  }
+
   const origin = getApiOrigin();
-  const clean = path.replace(/\\/g, "/").replace(/^\/+/, "");
   return `${origin}/${clean}`;
 };

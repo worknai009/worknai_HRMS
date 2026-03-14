@@ -156,7 +156,7 @@ const updateEmployeeDetails = async (req, res) => {
       return res.status(403).json({ message: 'Access denied' });
     }
 
-    const allowed = ['name', 'email', 'mobile', 'designation', 'department', 'managerId', 'employeeCode', 'basicSalary', 'salary', 'joiningDate'];
+    const allowed = ['name', 'email', 'mobile', 'designation', 'department', 'managerId', 'employeeCode', 'basicSalary', 'salary', 'joiningDate', 'employmentType'];
     console.log('updateEmployeeDetails req.body:', req.body); // ✅ DEBUG LOG
 
 
@@ -607,8 +607,18 @@ const getPayrollStats = async (req, res) => {
 
         if (['Present', 'Completed'].includes(st)) { presentDays++; continue; }
       } else {
-        if (holidaySet.has(d)) holidayCount++;
-        else absentDays++;
+        // No attendance record for this day
+        const dayOfWeek = new Date(d + 'T12:00:00Z').getUTCDay();
+        const isSunday = dayOfWeek === 0;
+
+        if (holidaySet.has(d)) {
+          holidayCount++;
+        } else if (isSunday && user.employmentType === 'On-Roll') {
+          // Count Sundays as paid for On-Roll employees
+          holidayCount++;
+        } else {
+          absentDays++;
+        }
       }
     }
 
@@ -710,7 +720,11 @@ const generateSalarySlip = async (req, res) => {
         else if (mode === 'Unpaid Leave' || st === 'Absent') unpaidLeaveDays++;
         else if (['Present', 'Completed'].includes(st)) presentDays++;
       } else {
+        const dayOfWeek = new Date(d + 'T12:00:00Z').getUTCDay();
+        const isSunday = dayOfWeek === 0;
+
         if (holidaySet.has(d)) holidayCount++;
+        else if (isSunday && user.employmentType === 'On-Roll') holidayCount++;
       }
     }
 

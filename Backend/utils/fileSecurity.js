@@ -4,7 +4,7 @@ const fsp = require('fs/promises');
 const path = require('path');
 const crypto = require('crypto');
 
-const UPLOADS_ROOT = path.resolve(process.cwd(), 'uploads');
+const UPLOADS_ROOT = path.join(__dirname, '..', 'uploads');
 
 function ensureDir(dirPath) {
   try {

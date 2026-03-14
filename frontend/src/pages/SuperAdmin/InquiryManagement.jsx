@@ -1,14 +1,17 @@
-// src/pages/SuperAdmin/InquiryManagement.jsx
 import React, { useState, useEffect, useMemo } from 'react';
 import API from '../../services/api';
 import { toast } from 'react-toastify';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
 import {
   FaClipboardList, FaSearch, FaFilter, FaSync,
   FaEnvelope, FaPhone, FaMapMarkerAlt, FaTrash, FaEdit, FaSave, FaBan,
-  FaSpinner
+  FaSpinner, FaSignOutAlt, FaArrowLeft
 } from 'react-icons/fa';
 
 const InquiryManagement = () => {
+  const navigate = useNavigate();
+  const { logout } = useAuth();
   const [inquiries, setInquiries] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -24,9 +27,7 @@ const InquiryManagement = () => {
   const fetchInquiries = async () => {
     try {
       setLoading(true);
-      const res = await API.get('/superadmin/dashboard-data'); // Ensure this endpoint returns { inquiries: [] } or adjust if using dedicated inquiries endpoint
-      // Adjusting based on common patterns, if you have a specific endpoint for inquiries list use that
-      // Assuming res.data might be the array directly or inside an object
+      const res = await API.get('/superadmin/dashboard-data'); 
       const data = res.data.inquiries || (Array.isArray(res.data) ? res.data : []); 
       setInquiries(data);
     } catch (err) {
@@ -86,12 +87,20 @@ const InquiryManagement = () => {
       {/* HEADER */}
       <header className="page-header">
         <div className="title">
+          <button className="btn-back" onClick={() => navigate("/superadmin/dashboard")} title="Back to Dashboard">
+            <FaArrowLeft />
+          </button>
           <div className="icon-box"><FaClipboardList/></div>
           <div><h1>Inquiry Pipeline</h1><p>Manage incoming partnership requests.</p></div>
         </div>
-        <button className="btn-sync" onClick={fetchInquiries} title="Refresh Data">
-          <FaSync className={loading ? "spin" : ""} />
-        </button>
+        <div className="header-actions">
+          <button className="btn-sync" onClick={fetchInquiries} title="Refresh Data">
+            <FaSync className={loading ? "spin" : ""} />
+          </button>
+          <button className="btn-logout" onClick={() => logout("/")} title="Logout">
+            <FaSignOutAlt /> Logout
+          </button>
+        </div>
       </header>
 
       {/* CONTROLS */}
@@ -207,7 +216,39 @@ const InquiryManagement = () => {
         
         /* HEADER */
         .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
+        .header-actions { display: flex; gap: 12px; align-items: center; }
         .title { display: flex; gap: 15px; align-items: center; }
+        
+        .btn-back {
+          background: rgba(255,255,255,0.05);
+          border: 1px solid var(--border);
+          color: white;
+          width: 40px;
+          height: 40px;
+          border-radius: 10px;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: 0.3s;
+        }
+        .btn-back:hover { background: rgba(255,255,255,0.1); border-color: var(--accent); }
+
+        .btn-logout {
+          background: rgba(239, 68, 68, 0.1);
+          border: 1px solid rgba(239, 68, 68, 0.2);
+          color: #ef4444;
+          padding: 8px 16px;
+          border-radius: 10px;
+          cursor: pointer;
+          font-weight: 700;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          transition: 0.3s;
+        }
+        .btn-logout:hover { background: #ef4444; color: white; }
+
         .icon-box { 
           width: 50px; height: 50px; 
           background: linear-gradient(135deg, #f59e0b, #d97706); 

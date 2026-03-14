@@ -10,7 +10,11 @@ import {
   FaLinkedin,
   FaTwitter,
   FaPaperPlane,
+  FaUser,
+  FaUsers,
+  FaCommentDots,
 } from "react-icons/fa";
+import locationImg from "../../assets/location.png";
 
 const Contact = () => {
   const WEB3FORMS_ACCESS_KEY = "ff3f8fa1-188b-41fa-89a0-70fe6224c214"; // ✅ your web3forms access_key
@@ -82,6 +86,11 @@ const Contact = () => {
 
   return (
     <div className="contact-wrapper">
+      {/* Background Blobs for Depth */}
+      <div className="blob blob-1"></div>
+      <div className="blob blob-2"></div>
+      <div className="blob blob-3"></div>
+
       {/* --- PREMIUM HERO --- */}
       <section className="contact-hero animate-fade">
         <div className="container">
@@ -130,14 +139,14 @@ const Contact = () => {
 
           </div>
 
-          {/* Simple Map Placeholder */}
+          {/* Support Team Image Placeholder */}
           <div className="map-frame animate-up-slow">
             <img
-              src="https://images.unsplash.com/photo-1526778548025-fa2f459cd5c1?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80"
-              alt="World Map"
+              src={locationImg}
+              alt="Location"
             />
             <div className="map-overlay">
-              <FaMapMarkerAlt /> Global Operations Center
+              <FaHeadset style={{ marginRight: "6px" }} /> 24/7 Priority Support Center
             </div>
           </div>
         </aside>
@@ -158,81 +167,100 @@ const Contact = () => {
               <div className="input-row">
                 <div className="input-group">
                   <label>Organization Name</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="e.g. Acme Corp"
-                    value={form.companyName}
-                    onChange={(e) =>
-                      setForm({ ...form, companyName: e.target.value })
-                    }
-                  />
+                  <div className="input-wrapper">
+                    <FaBuilding className="input-icon" />
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. Acme Corp"
+                      value={form.companyName}
+                      onChange={(e) =>
+                        setForm({ ...form, companyName: e.target.value })
+                      }
+                    />
+                  </div>
                 </div>
 
                 <div className="input-group">
                   <label>Contact Person</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="Your Name"
-                    value={form.contactPerson}
-                    onChange={(e) =>
-                      setForm({ ...form, contactPerson: e.target.value })
-                    }
-                  />
+                  <div className="input-wrapper">
+                    <FaUser className="input-icon" />
+                    <input
+                      type="text"
+                      required
+                      placeholder="Your Name"
+                      value={form.contactPerson}
+                      onChange={(e) =>
+                        setForm({ ...form, contactPerson: e.target.value })
+                      }
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="input-row">
+                <div className="input-group">
+                  <label>Business Email</label>
+                  <div className="input-wrapper">
+                    <FaEnvelope className="input-icon" />
+                    <input
+                      type="email"
+                      required
+                      placeholder="name@company.com"
+                      value={form.email}
+                      onChange={(e) => setForm({ ...form, email: e.target.value })}
+                    />
+                  </div>
+                </div>
+
+                <div className="input-group">
+                  <label>Mobile Number</label>
+                  <div className="input-wrapper">
+                    <FaPhoneAlt className="input-icon" />
+                    <input
+                      type="text"
+                      required
+                      placeholder="+91 XXXX XXXX"
+                      value={form.mobile}
+                      onChange={(e) => setForm({ ...form, mobile: e.target.value })}
+                    />
+                  </div>
                 </div>
               </div>
 
               <div className="input-group">
-                <label>Business Email</label>
-                <input
-                  type="email"
-                  required
-                  placeholder="name@company.com"
-                  value={form.email}
-                  onChange={(e) => setForm({ ...form, email: e.target.value })}
-                />
-              </div>
-
-              <div className="input-group">
-                <label>Mobile Number</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="+91 XXXXX XXXXX"
-                  value={form.mobile}
-                  onChange={(e) => setForm({ ...form, mobile: e.target.value })}
-                />
-              </div>
-
-              {/* ✅ NEW FIELD: Total Employees */}
-              <div className="input-group">
                 <label>Total Employees</label>
-                <select
-                  required
-                  value={form.employeeRange}
-                  onChange={(e) =>
-                    setForm({ ...form, employeeRange: e.target.value })
-                  }
-                >
-                  <option value="">Select range</option>
-                  <option value="0-15">0 - 15</option>
-                  <option value="15-40">15 - 40</option>
-                  <option value="40-100">40 - 100</option>
-                  <option value="100-250">100 - 250</option>
-                  <option value="250+">250+</option>
-                </select>
+                <div className="input-wrapper">
+                  <FaUsers className="input-icon" />
+                  <select
+                    required
+                    value={form.employeeRange}
+                    onChange={(e) =>
+                      setForm({ ...form, employeeRange: e.target.value })
+                    }
+                  >
+                    <option value="">Select range</option>
+                    <option value="0-15">0 - 15</option>
+                    <option value="15-40">15 - 40</option>
+                    <option value="40-100">40 - 100</option>
+                    <option value="100-250">100 - 250</option>
+                    <option value="250+">250+</option>
+                  </select>
+                </div>
               </div>
 
               <div className="input-group">
                 <label>Additional Requirements (Optional)</label>
-                <textarea
-                  placeholder="Tell us about your team size and office locations..."
-                  value={form.message}
-                  onChange={(e) =>
-                    setForm({ ...form, message: e.target.value })
-                  }
-                />
+                <div className="input-wrapper text-area-wrap">
+                  <FaCommentDots className="input-icon area-icon" />
+                  <textarea
+                    placeholder="Tell us about your team size, locations or specific needs..."
+                    value={form.message}
+                    onChange={(e) =>
+                      setForm({ ...form, message: e.target.value })
+                    }
+                  />
+                </div>
               </div>
 
               <button type="submit" className="submit-btn" disabled={loading}>
@@ -250,97 +278,222 @@ const Contact = () => {
       </div>
 
       <style>{`
-        .contact-wrapper { background: #fff; font-family: 'Plus Jakarta Sans', sans-serif; padding-bottom: 100px; overflow-x: hidden; }
+        .contact-wrapper { background: #0c0f24; font-family: 'Plus Jakarta Sans', sans-serif; padding-bottom: 100px; overflow-x: hidden; padding-top: 70px; }
         .container { max-width: 1200px; margin: 0 auto; padding: 0 20px; }
+        
+        /* Premium Background Elements */
+        .blob {
+          position: fixed;
+          border-radius: 50%;
+          filter: blur(80px);
+          z-index: 0;
+          opacity: 0.15;
+          pointer-events: none;
+          animation: float 20s infinite alternate;
+        }
+        .blob-1 { width: 500px; height: 500px; background: #a78bfa; top: -100px; right: -100px; animation-delay: 0s; }
+        .blob-2 { width: 400px; height: 400px; background: #50c8ff; bottom: -50px; left: -50px; animation-delay: -5s; }
+        .blob-3 { width: 300px; height: 300px; background: #e879f9; top: 40%; left: 30%; animation-delay: -10s; }
+
+        @keyframes float {
+          0% { transform: translate(0, 0) scale(1); }
+          50% { transform: translate(30px, 40px) scale(1.1); }
+          100% { transform: translate(-20px, 20px) scale(0.9); }
+        }
 
         /* Hero */
-        .contact-hero { padding: 120px 0 80px; text-align: center; background: radial-gradient(circle at top right, #f8faff, #fff); }
-        .support-badge { background: #e0f2fe; color: #1a73e8; padding: 8px 20px; border-radius: 50px; font-weight: 800; font-size: 0.75rem; letter-spacing: 1px; }
-        .contact-hero h1 { font-size: 3.5rem; font-weight: 900; margin: 25px 0; letter-spacing: -2px; }
-        .contact-hero h1 span { color: #1a73e8; }
-        .contact-hero p { max-width: 700px; margin: 0 auto; color: #64748b; font-size: 1.2rem; line-height: 1.6; }
+        .contact-hero { padding: 60px 0 30px; text-align: center; position: relative; z-index: 1; }
+        .support-badge { 
+          background: rgba(167, 139, 250, 0.1); 
+          color: #fff; 
+          padding: 10px 24px; 
+          border-radius: 50px; 
+          font-weight: 800; 
+          font-size: 0.7rem; 
+          letter-spacing: 2.5px;
+          border: 1px solid rgba(167, 139, 250, 0.3);
+          box-shadow: 0 0 30px rgba(167, 139, 250, 0.15);
+          display: inline-block;
+          background: linear-gradient(90deg, rgba(167, 139, 250, 0.1), rgba(80, 200, 255, 0.1));
+        }
+        .contact-hero h1 { font-size: clamp(1.8rem, 4vw, 2.8rem); font-weight: 900; margin: 20px 0; letter-spacing: -1.5px; color: #fff; line-height: 1.1; }
+        .contact-hero h1 span { 
+          background: linear-gradient(135deg, #a78bfa 0%, #50c8ff 100%);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+        }
+        .contact-hero p { max-width: 600px; margin: 0 auto; color: rgba(255, 255, 255, 0.6); font-size: 1.05rem; line-height: 1.5; }
 
         /* Grid Layout */
-        .main-grid { display: grid; grid-template-columns: 400px 1fr; gap: 40px; }
-        .glass-card { background: #fff; border-radius: 24px; border: 1px solid #eef2f6; box-shadow: 0 20px 40px rgba(0,0,0,0.03); overflow: hidden; }
+        .main-grid { display: grid; grid-template-columns: 320px 1fr; gap: 24px; position: relative; z-index: 1; margin-top: -30px; }
+        .glass-card { 
+          background: rgba(255, 255, 255, 0.03); 
+          backdrop-filter: blur(12px);
+          -webkit-backdrop-filter: blur(12px);
+          border-radius: 28px; 
+          border: 1px solid rgba(255, 255, 255, 0.08); 
+          box-shadow: 0 25px 50px rgba(0,0,0,0.2); 
+          overflow: hidden; 
+          transition: 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .info-panel {
+          position: sticky;
+          top: 90px;
+          height: fit-content;
+        }
 
         /* Info Panel */
-        .contact-card { padding: 40px; }
-        .contact-card h3 { font-size: 1.3rem; margin-bottom: 30px; display: flex; align-items: center; gap: 12px; }
-        .icon-blue { color: #1a73e8; }
+        .contact-card { padding: 25px; position: relative; }
+        .contact-card h3 { font-size: 1.25rem; margin-bottom: 25px; display: flex; align-items: center; gap: 10px; color: #fff; }
+        .icon-blue { color: #50c8ff; }
 
-        .contact-links { display: flex; flex-direction: column; gap: 25px; }
-        .c-item { display: flex; gap: 15px; align-items: flex-start; }
-        .c-icon { font-size: 1.2rem; color: #1a73e8; margin-top: 5px; }
-        .c-item label { display: block; font-size: 0.75rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; margin-bottom: 2px; }
-        .c-item p { margin: 0; font-weight: 600; color: #1e293b; font-size: 0.95rem; }
+        .contact-links { display: flex; flex-direction: column; gap: 20px; }
+        .c-item { display: flex; gap: 15px; align-items: flex-start; transition: 0.3s; }
+        .c-item:hover { transform: translateX(8px); }
+        .c-icon { font-size: 1rem; color: #a78bfa; padding: 10px; background: rgba(167, 139, 250, 0.12); border-radius: 12px; border: 1px solid rgba(167, 139, 250, 0.15); display: flex; align-items: center; justify-content: center; }
+        .c-item label { display: block; font-size: 0.68rem; font-weight: 800; color: #a78bfa; text-transform: uppercase; margin-bottom: 2px; letter-spacing: 1.2px; opacity: 0.8; }
+        .c-item p { margin: 0; font-weight: 600; color: #fff; font-size: 0.92rem; letter-spacing: 0.2px; }
 
-        .social-connect { margin-top: 50px; padding-top: 30px; border-top: 1px solid #f1f5f9; }
-        .social-connect p { font-size: 0.8rem; font-weight: 700; color: #94a3b8; margin-bottom: 15px; }
-        .social-icons { display: flex; gap: 20px; font-size: 1.5rem; color: #cbd5e1; }
-
-        .map-frame { position: relative; border-radius: 24px; overflow: hidden; margin-top: 30px; }
-        .map-frame img { width: 100%; height: 200px; object-fit: cover; filter: grayscale(100%); transition: 0.5s; }
-        .map-frame:hover img { filter: grayscale(0%); }
-        .map-overlay { position: absolute; inset: 0; background: rgba(26, 115, 232, 0.1); display: flex; align-items: center; justify-content: center; font-weight: 800; color: #fff; font-size: 0.9rem; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
+        .map-frame { position: relative; border-radius: 20px; overflow: hidden; margin-top: 20px; border: 1px solid rgba(255, 255, 255, 0.08); box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
+        .map-frame img { 
+          width: 100%; 
+          height: 300px; 
+          object-fit: cover; 
+          object-position: center;
+          filter: contrast(1.05) brightness(1); 
+          transition: 0.8s cubic-bezier(0.16, 1, 0.3, 1); 
+        }
+        .map-frame:hover img { filter: contrast(1.1) brightness(1.1); transform: scale(1.05); }
+        .map-overlay { 
+          position: absolute; 
+          inset: 0; 
+          background: linear-gradient(to top, rgba(12, 15, 36, 0.8), transparent 60%); 
+          display: flex; 
+          align-items: flex-end; 
+          justify-content: center; 
+          padding-bottom: 20px; 
+          font-weight: 700; 
+          color: #fff; 
+          font-size: 0.85rem; 
+          letter-spacing: 0.5px; 
+          text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+        }
 
         /* Form Card */
-        .form-card { padding: 50px; }
-        .form-header { margin-bottom: 35px; }
-        .form-header h2 { font-size: 2rem; font-weight: 800; margin-bottom: 10px; }
-        .form-header h2 span { color: #1a73e8; }
-        .form-header p { color: #64748b; }
+        .form-card { 
+          padding: 30px 40px; 
+          max-height: 560px;
+          overflow-y: auto;
+          scrollbar-width: thin;
+          scrollbar-color: rgba(167, 139, 250, 0.3) transparent;
+        }
 
-        .premium-form { display: flex; flex-direction: column; gap: 20px; }
-        .input-row { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-        .input-group label { display: block; font-size: 0.85rem; font-weight: 700; color: #475569; margin-bottom: 8px; }
+        .form-card::-webkit-scrollbar {
+          width: 6px;
+        }
+        .form-card::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        .form-card::-webkit-scrollbar-thumb {
+          background: rgba(167, 139, 250, 0.2);
+          border-radius: 10px;
+        }
+        .form-card::-webkit-scrollbar-thumb:hover {
+          background: rgba(167, 139, 250, 0.4);
+        }
+        .form-header { margin-bottom: 25px; }
+        .form-header h2 { font-size: 2rem; font-weight: 900; margin-bottom: 8px; color: #fff; letter-spacing: -1px; }
+        .form-header h2 span { 
+          background: linear-gradient(135deg, #a78bfa 0%, #e879f9 100%);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+        }
+        .form-header p { color: rgba(255, 255, 255, 0.5); font-size: 0.95rem; }
+
+        .premium-form { display: flex; flex-direction: column; gap: 12px; }
+        .input-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .input-group label { display: block; font-size: 0.78rem; font-weight: 700; color: rgba(255, 255, 255, 0.5); margin-bottom: 6px; margin-left: 2px; text-transform: uppercase; letter-spacing: 0.5px; }
+
+        .input-wrapper { position: relative; display: flex; align-items: center; }
+        .input-icon { position: absolute; left: 16px; color: #a78bfa; font-size: 0.85rem; pointer-events: none; opacity: 0.6; transition: 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
+        .input-wrapper:focus-within .input-icon { color: #50c8ff; opacity: 1; transform: scale(1.1) translateX(2px); }
+        .area-icon { top: 14px; }
 
         .input-group input, .input-group textarea, .input-group select {
           width: 100%;
-          padding: 14px;
-          border: 1.5px solid #e2e8f0;
-          border-radius: 12px;
+          padding: 12px 16px 12px 45px;
+          background: rgba(255, 255, 255, 0.03);
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          border-radius: 14px;
           outline: none;
-          transition: 0.2s;
+          transition: 0.3s cubic-bezier(0.16, 1, 0.3, 1);
           font-family: inherit;
+          color: #fff;
+          font-size: 0.92rem;
           box-sizing: border-box;
-          background: #fff;
+          backdrop-filter: blur(4px);
         }
+
+        .input-group textarea { height: 90px; resize: none; padding-top: 12px; }
 
         .input-group input:focus, .input-group textarea:focus, .input-group select:focus {
-          border-color: #1a73e8;
-          box-shadow: 0 0 0 4px rgba(26, 115, 232, 0.05);
+          border-color: rgba(167, 139, 250, 0.4);
+          background: rgba(255, 255, 255, 0.06);
+          box-shadow: 0 0 0 4px rgba(167, 139, 250, 0.1), inset 0 0 10px rgba(167, 139, 250, 0.05);
         }
 
-        .input-group textarea { height: 120px; resize: none; }
+        /* Dropdown Styling Fix */
+        .input-group select {
+          cursor: pointer;
+          appearance: none;
+          background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%23a78bfa' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E");
+          background-repeat: no-repeat;
+          background-position: calc(100% - 15px) center;
+        }
+
+        .input-group select option {
+          background-color: #0c0f24;
+          color: #fff;
+          padding: 10px;
+        }
 
         .submit-btn {
-          background: #1a73e8;
+          background: linear-gradient(135deg, #a78bfa 0%, #50c8ff 100%);
           color: #fff;
           border: none;
-          padding: 18px;
-          border-radius: 15px;
+          padding: 16px;
+          border-radius: 14px;
           font-weight: 800;
           font-size: 1rem;
           cursor: pointer;
-          transition: 0.3s;
+          transition: 0.4s cubic-bezier(0.16, 1, 0.3, 1);
           display: flex;
           align-items: center;
           justify-content: center;
           gap: 12px;
-          box-shadow: 0 10px 20px rgba(26, 115, 232, 0.2);
+          margin-top: 5px;
+          box-shadow: 0 10px 30px rgba(167, 139, 250, 0.2);
+          text-transform: uppercase;
+          letter-spacing: 1px;
         }
-        .submit-btn:hover { background: #1557b0; transform: translateY(-3px); }
-        .submit-btn:disabled { background: #94a3b8; cursor: not-allowed; }
+        .submit-btn:hover { 
+          transform: translateY(-3px); 
+          box-shadow: 0 15px 40px rgba(167, 139, 250, 0.3);
+          filter: brightness(1.1);
+        }
+        .submit-btn:disabled { background: #334155; transform: none; box-shadow: none; opacity: 0.6; }
 
         @media (max-width: 1024px) {
-          .main-grid { grid-template-columns: 1fr; }
-          .info-panel { order: 2; }
-          .form-card { padding: 30px; }
-          .contact-hero h1 { font-size: 2.5rem; }
+          .main-grid { grid-template-columns: 1fr; gap: 30px; }
+          .info-panel { order: 2; position: static; }
+          .form-card { padding: 40px 30px; max-height: none; overflow: visible; }
+          .contact-hero h1 { font-size: 2.8rem; }
         }
         @media (max-width: 600px) {
           .input-row { grid-template-columns: 1fr; }
+          .contact-hero { padding-top: 80px; }
+          .form-card { padding: 30px 20px; }
         }
       `}</style>
     </div>

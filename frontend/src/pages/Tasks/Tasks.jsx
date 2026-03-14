@@ -1,8 +1,9 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useAuth } from "../../context/AuthContext";
+import { useNavigate } from "react-router-dom";
 import API, { assignTask, getAllTasks, getMyTasks, submitTask, reviewTask, updateTaskStatus } from "../../services/api";
 import { toast } from "react-toastify";
-import { FaTasks, FaDownload, FaFileUpload, FaCheckCircle, FaClock, FaExclamationCircle, FaPlay, FaPaperPlane } from "react-icons/fa";
+import { FaTasks, FaDownload, FaFileUpload, FaCheckCircle, FaClock, FaExclamationCircle, FaPlay, FaPaperPlane, FaArrowLeft, FaSignOutAlt } from "react-icons/fa";
 import { useClientPagination } from "../../utils/useClientPagination";
 import Pagination from "../../components/Pagination";
 
@@ -34,7 +35,8 @@ const handleDownload = async (taskId, fileUrl, fileName) => {
 };
 
 const Tasks = () => {
-    const { user } = useAuth();
+    const { user, logout } = useAuth();
+    const navigate = useNavigate();
     const isHR = ["Admin", "CompanyAdmin", "SuperAdmin"].includes(user?.role);
 
     const [tasks, setTasks] = useState([]);
@@ -159,20 +161,30 @@ const Tasks = () => {
         <div className="page-anim" style={{ padding: '24px', maxWidth: '1200px', margin: '0 auto', fontFamily: 'Inter, sans-serif' }}>
 
             {/* Header */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-                <div>
-                    <h2 style={{ margin: 0, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <FaTasks style={{ color: '#10b981' }} /> {isHR ? "Task Management" : "My Tasks"}
-                    </h2>
-                    <p style={{ margin: '4px 0 0', color: '#64748b', fontSize: '14px' }}>
-                        {isHR ? "Assign and review employee work." : "Track and submit your assignments."}
-                    </p>
-                </div>
-                {isHR && (
-                    <button onClick={() => setActiveModal('create')} className="btn-primary">
-                        + New Task
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                    <button className="btn-back" onClick={() => navigate(-1)} title="Back">
+                        <FaArrowLeft />
                     </button>
-                )}
+                    <div>
+                        <h2 style={{ margin: 0, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <FaTasks style={{ color: '#10b981' }} /> {isHR ? "Task Management" : "My Tasks"}
+                        </h2>
+                        <p style={{ margin: '4px 0 0', color: '#64748b', fontSize: '14px' }}>
+                            {isHR ? "Assign and review employee work." : "Track and submit your assignments."}
+                        </p>
+                    </div>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    {isHR && (
+                        <button onClick={() => setActiveModal('create')} className="btn-primary">
+                            + New Task
+                        </button>
+                    )}
+                    <button className="btn-logout-tasks" onClick={() => logout("/")} title="Logout">
+                        <FaSignOutAlt /> Logout
+                    </button>
+                </div>
             </div>
 
             {/* Task List */}
@@ -363,6 +375,21 @@ const Tasks = () => {
         .btn-orange { background: #f59e0b; color: white; border: none; padding: 8px 14px; border-radius: 10px; font-weight: 700; cursor: pointer; font-size: 13px; }
         .btn-light { background: white; border: 1px solid #e2e8f0; color: #475569; padding: 8px 14px; border-radius: 10px; font-weight: 700; cursor: pointer; font-size: 13px; }
         .btn-light:hover { background: #f8fafc; color: #0f172a; }
+
+        .btn-back {
+          width: 40px; height: 40px; border-radius: 12px; border: 1px solid #e2e8f0; 
+          background: white; color: #475569; display: grid; place-items: center; 
+          cursor: pointer; transition: 0.3s;
+        }
+        .btn-back:hover { border-color: #10b981; color: #10b981; background: #f0fdf4; }
+
+        .btn-logout-tasks {
+          background: #fee2e2; border: 1px solid #fecaca; color: #dc2626; 
+          padding: 10px 18px; border-radius: 12px; font-weight: 800; 
+          cursor: pointer; display: flex; align-items: center; gap: 10px; 
+          transition: 0.3s; font-size: 13px;
+        }
+        .btn-logout-tasks:hover { background: #dc2626; color: white; }
 
         .task-card { 
             background: white; border: 1px solid #e2e8f0; border-radius: 16px; padding: 20px; 
